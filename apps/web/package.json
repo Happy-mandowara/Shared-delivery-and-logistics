@@ -1,0 +1,42 @@
+{
+  "name": "@nationx/web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test:integration": "tsx tests/api-integration.test.ts",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nationx/shared": "*",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.47.10",
+    "@tanstack/react-query": "^5.105.3",
+    "@types/leaflet": "^1.9.22",
+    "clsx": "^2.1.1",
+    "geist": "^1.3.1",
+    "jsonwebtoken": "^9.0.3",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.468.0",
+    "next": "15.5.0",
+    "pg": "^8.23.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tailwind-merge": "^2.5.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0-beta.8",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.17.10",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.1.1",
+    "@types/react-dom": "^19.1.1",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^4.0.0-beta.8",
+    "typescript": "^5.7.2"
+  }
+}

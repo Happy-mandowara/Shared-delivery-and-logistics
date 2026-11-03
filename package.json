@@ -1,0 +1,35 @@
+{
+  "name": "nationx-shared-delivery-monorepo",
+  "version": "2.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "dev:web": "turbo dev --filter=@nationx/web",
+    "dev:mobile": "turbo dev --filter=@nationx/mobile",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "npm run test:db && npm run test:api && npm run test:security && npm run test:commerce",
+    "test:api": "cd apps/web && npx tsx --tsconfig tsconfig.json tests/api-integration.test.ts",
+    "test:security": "cd apps/web && npx tsx --tsconfig tsconfig.json tests/security-audit.test.ts",
+    "test:commerce": "cd apps/web && npx tsx --tsconfig tsconfig.json tests/commerce-backend.test.ts",
+    "test:db": "tsx supabase/tests/run-db-tests.ts"
+  },
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "overrides": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.10",
+    "typescript": "^5.7.2",
+    "tsx": "^4.19.2"
+  }
+}

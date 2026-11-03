@@ -1,0 +1,342 @@
+// Prisma schema — NationX Shared Delivery MVP
+// Run: npx prisma migrate dev --name init
+// This is a standalone MVP schema. Replace local demo identity records with
+// NationX Foundation identity references when the real integration is available.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MERCHANT
+  PARTNER
+  CUSTOMER
+}
+
+enum FulfillmentMode {
+  SHARED_DELIVERY
+  EXPRESS
+  CUSTOMER_PICKUP
+}
+
+enum OrderStatus {
+  CONFIRMED
+  FULFILLING
+  PARTIALLY_FULFILLED
+  COMPLETED
+  CANCELLED
+}
+
+enum SuborderStatus {
+  PLACED
+  ACCEPTED
+  REJECTED
+  PREPARING
+  READY_FOR_PICKUP
+  PICKED_UP
+  DELIVERED
+  CANCELLED
+  EXCEPTION
+}
+
+enum BatchStatus {
+  DRAFT
+  OPEN
+  ASSIGNED
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  EXCEPTION
+}
+
+enum AssignmentStatus {
+  OFFERED
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum PartnerAvailability {
+  AVAILABLE
+  BUSY
+  OFFLINE
+  SUSPENDED
+}
+
+enum StopType {
+  PICKUP
+  DROPOFF
+  CUSTOMER_PICKUP
+  RETURN
+}
+
+enum StopStatus {
+  PENDING
+  ARRIVED
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+enum DeliveryEventType {
+  ORDER_REQUESTED
+  PARTNER_ASSIGNED
+  ASSIGNMENT_ACCEPTED
+  ASSIGNMENT_REJECTED
+  MERCHANT_ACCEPTED
+  PREPARATION_STARTED
+  READY_FOR_PICKUP
+  PICKUP_CONFIRMED
+  IN_TRANSIT
+  DELIVERY_ATTEMPTED
+  DELIVERED
+  FAILED
+  CANCELLED
+  REASSIGNED
+  RETURN_REQUESTED
+  RETURNED
+  ADMIN_INTERVENTION
+  NOTE
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  phone       String?
+  role        UserRole
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  merchant    Merchant?
+  partner     DeliveryPartner?
+  customerOrders Order[] @relation("CustomerOrders")
+  events      DeliveryEvent[] @relation("EventActor")
+}
+
+model Merchant {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  name        String
+  code        String   @unique
+  address     String
+  locality    String
+  latitude    Float?
+  longitude   Float?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  user        User @relation(fields: [userId], references: [id])
+  suborders   MerchantSuborder[]
+}
+
+model DeliveryPartner {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  vehicleType String?
+  capacityUnits Int    @default(5)
+  availability PartnerAvailability @default(OFFLINE)
+  currentLocality String?
+  latitude    Float?
+  longitude   Float?
+  verified    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User @relation(fields: [userId], references: [id])
+  assignments DeliveryAssignment[]
+}
+
+model Order {
+  id             String   @id @default(cuid())
+  orderNumber    String   @unique
+  customerId     String
+  status         OrderStatus @default(CONFIRMED)
+  fulfillmentMode FulfillmentMode @default(SHARED_DELIVERY)
+  deliveryAddress String
+  deliveryLocality String
+  deliveryLatitude Float?
+  deliveryLongitude Float?
+  deliveryWindowStart DateTime?
+  deliveryWindowEnd DateTime?
+  dispatchDeadline DateTime?
+  customerNotes String?
+  paymentReference String?
+  subtotal       Decimal  @db.Decimal(12, 2)
+  deliveryFee    Decimal  @default(0) @db.Decimal(12, 2)
+  total          Decimal  @db.Decimal(12, 2)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  customer       User @relation("CustomerOrders", fields: [customerId], references: [id])
+  suborders      MerchantSuborder[]
+  batchLinks     BatchOrder[]
+  events         DeliveryEvent[]
+}
+
+model MerchantSuborder {
+  id             String   @id @default(cuid())
+  suborderNumber String   @unique
+  orderId        String
+  merchantId     String
+  status         SuborderStatus @default(PLACED)
+  preparationDeadline DateTime?
+  readyAt        DateTime?
+  handedOverAt   DateTime?
+  subtotal       Decimal @db.Decimal(12, 2)
+  merchantNotes  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  order          Order @relation(fields: [orderId], references: [id])
+  merchant       Merchant @relation(fields: [merchantId], references: [id])
+  items          OrderItem[]
+  batchLinks     BatchOrder[]
+  events         DeliveryEvent[]
+
+  @@index([merchantId, status])
+  @@index([orderId])
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  suborderId  String
+  productName String
+  sku         String?
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(12, 2)
+  handlingTag String?
+  weightUnits Float?
+  createdAt   DateTime @default(now())
+
+  suborder    MerchantSuborder @relation(fields: [suborderId], references: [id])
+
+  @@index([suborderId])
+}
+
+model DeliveryBatch {
+  id          String   @id @default(cuid())
+  batchCode   String   @unique
+  status      BatchStatus @default(DRAFT)
+  locality    String
+  maxOrders   Int      @default(8)
+  capacityUnits Int    @default(10)
+  estimatedDistanceKm Float?
+  estimatedDurationMin Int?
+  plannedAt   DateTime?
+  dispatchedAt DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders      BatchOrder[]
+  assignments DeliveryAssignment[]
+  stops       DeliveryStop[]
+  events      DeliveryEvent[]
+
+  @@index([status, locality])
+}
+
+model BatchOrder {
+  id          String   @id @default(cuid())
+  batchId     String
+  orderId     String
+  suborderId  String?
+  createdAt   DateTime @default(now())
+
+  batch       DeliveryBatch @relation(fields: [batchId], references: [id])
+  order       Order @relation(fields: [orderId], references: [id])
+  suborder    MerchantSuborder? @relation(fields: [suborderId], references: [id])
+
+  @@unique([batchId, orderId, suborderId])
+  @@index([orderId])
+}
+
+model DeliveryAssignment {
+  id          String   @id @default(cuid())
+  batchId     String
+  partnerId   String
+  status      AssignmentStatus @default(OFFERED)
+  offeredAt   DateTime @default(now())
+  respondedAt DateTime?
+  completedAt DateTime?
+  idempotencyKey String? @unique
+  createdAt   DateTime @default(now())
+
+  batch       DeliveryBatch @relation(fields: [batchId], references: [id])
+  partner     DeliveryPartner @relation(fields: [partnerId], references: [id])
+
+  @@index([partnerId, status])
+  @@index([batchId, status])
+}
+
+model DeliveryStop {
+  id          String   @id @default(cuid())
+  batchId     String
+  sequence    Int
+  type        StopType
+  status      StopStatus @default(PENDING)
+  merchantId  String?
+  orderId     String?
+  suborderId  String?
+  address     String
+  locality    String
+  latitude    Float?
+  longitude   Float?
+  instructions String?
+  arrivedAt   DateTime?
+  completedAt DateTime?
+  failureReason String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  batch       DeliveryBatch @relation(fields: [batchId], references: [id])
+
+  @@unique([batchId, sequence])
+  @@index([batchId, status])
+}
+
+model DeliveryEvent {
+  id          String   @id @default(cuid())
+  type        DeliveryEventType
+  message     String
+  reason      String?
+  actorId     String?
+  orderId     String?
+  suborderId  String?
+  batchId     String?
+  metadata    Json?
+  idempotencyKey String? @unique
+  createdAt   DateTime @default(now())
+
+  actor       User? @relation("EventActor", fields: [actorId], references: [id])
+  order       Order? @relation(fields: [orderId], references: [id])
+  suborder    MerchantSuborder? @relation(fields: [suborderId], references: [id])
+  batch       DeliveryBatch? @relation(fields: [batchId], references: [id])
+
+  @@index([orderId, createdAt])
+  @@index([suborderId, createdAt])
+  @@index([batchId, createdAt])
+}
+
+model DeliveryFee {
+  id          String   @id @default(cuid())
+  orderId     String
+  amount      Decimal  @db.Decimal(12, 2)
+  currency    String   @default("INR")
+  ruleCode    String
+  isDemoRule  Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  // Kept as a reference string until fee ownership is integrated with the commerce module.
+  @@index([orderId])
+}

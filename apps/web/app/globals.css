@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+:root {
+  --primary-teal: #0F766E;
+  --dark-primary: #34B8AB;
+  --light-surface: #F8FAFA;
+  --dark-surface: #0B1514;
+  --danger: #B42318;
+  --success: #166534;
+  --warning: #92400E;
+
+  --background: var(--light-surface);
+  --foreground: #1c1c1a;
+  --radius: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: var(--dark-surface);
+    --foreground: #f0f4f4;
+  }
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-x: clip;
+}
+
+/* Ensure accessible minimum interactive touch targets */
+button, input, select, textarea {
+  min-height: 48px;
+}
+
+/* Accessible focus rings */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid #0F766E;
+  outline-offset: 2px;
+}
+
+/* Custom leaflet map markers styling */
+.custom-map-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  font-weight: 700;
+  transition: transform 0.15s ease-out;
+}
+.custom-map-pin:hover {
+  transform: scale(1.1);
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+}
