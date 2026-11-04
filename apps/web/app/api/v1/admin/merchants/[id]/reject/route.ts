@@ -40,8 +40,8 @@ export async function POST(
     // Notify merchant owner
     if (merchant.userId) {
       await pool.query(
-        `INSERT INTO public.notifications (user_id, role, type, title, message, link, read)
-         VALUES ($1, 'MERCHANT', 'MERCHANT_REJECTION', 'Shop Application Update', $2, '/merchant/onboarding', false)`,
+        `INSERT INTO public.notifications (user_id, type, title, message, deep_link)
+         VALUES ($1, 'SYSTEM_ALERT', 'Shop Application Update', $2, '/merchant/onboarding')`,
         [
           merchant.userId,
           `Your application for "${merchant.name}" requires attention: ${reason}`
@@ -52,14 +52,14 @@ export async function POST(
     // Record audit event
     await pool.query(
       `INSERT INTO public.delivery_events (
-        event_type, actor_id, actor_role, metadata, note
+        type, actor_id, message, reason, metadata
       ) VALUES ($1, $2, $3, $4, $5)`,
       [
-        "MERCHANT_REJECTED",
+        "ADMIN_INTERVENTION",
         auth.user.id,
-        auth.user.role,
+        `Administrator rejected merchant outlet: ${merchant.name}. Reason: ${reason}`,
+        reason,
         JSON.stringify({ merchantId: merchant.id, name: merchant.name, reason }),
-        `Administrator rejected merchant outlet: ${merchant.name}. Reason: ${reason}`
       ]
     );
 

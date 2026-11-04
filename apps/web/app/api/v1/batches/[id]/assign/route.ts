@@ -30,9 +30,9 @@ export async function POST(
     const { partnerId, idempotencyKey } = parsed.data;
 
     const result = await withUserDb(user.id, async (client) => {
-      // 1. Check partner availability
+      // 1. Check partner availability and verification
       const partnerRes = await client.query(
-        `SELECT id, availability, capacity_units FROM public.delivery_partners WHERE id = $1`,
+        `SELECT id, availability, capacity_units, verified FROM public.delivery_partners WHERE id = $1`,
         [partnerId]
       );
 
@@ -41,6 +41,9 @@ export async function POST(
       }
 
       const partner = partnerRes.rows[0];
+      if (!partner.verified) {
+        throw new Error("Delivery partner has not been verified and approved by administration");
+      }
       if (partner.availability !== "AVAILABLE") {
         throw new Error(`Partner is not currently available (status: ${partner.availability})`);
       }

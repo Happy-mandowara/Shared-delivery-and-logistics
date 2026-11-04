@@ -104,7 +104,18 @@ export async function GET(req: NextRequest) {
     query += ` ORDER BY p.name ASC`;
 
     const res = await pool.query(query, values);
-    return apiSuccess({ products: res.rows });
+    const products = res.rows.map((row) => ({
+      ...row,
+      price: row.price !== null && row.price !== undefined ? Number(row.price) : null,
+      variants: Array.isArray(row.variants)
+        ? row.variants.map((v: any) => ({
+            ...v,
+            price: v.price !== null && v.price !== undefined ? Number(v.price) : null,
+          }))
+        : row.variants,
+    }));
+
+    return apiSuccess({ products });
   } catch (err: any) {
     return apiError("DATABASE_ERROR", err.message || "Failed to fetch products", 500);
   }

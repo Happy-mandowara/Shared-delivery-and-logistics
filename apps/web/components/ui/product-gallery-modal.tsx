@@ -17,10 +17,11 @@ import {
 } from "lucide-react";
 import { useCart } from "@/components/cart-context";
 import { api } from "@/lib/api-client";
+import { parsePrice, formatCurrency } from "@nationx/shared";
 
 interface ProductVariant {
   name: string;
-  price: number;
+  price: number | string;
   unit?: string;
   stockStatus?: string;
 }
@@ -30,7 +31,7 @@ export interface ProductModalData {
   name: string;
   description?: string;
   category: string;
-  price: number;
+  price: number | string;
   imageUrl?: string;
   imageUrls?: string[];
   unit?: string;
@@ -76,9 +77,12 @@ export function ProductGalleryModal({
     ? [product.imageUrl] 
     : ["https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80"];
 
-  const currentPrice = selectedVariant ? selectedVariant.price : product.price;
+  const rawPrice = selectedVariant ? selectedVariant.price : product.price;
+  const currentPrice = parsePrice(rawPrice);
+  const isPriceValid = currentPrice !== null && currentPrice >= 0;
 
   const handleAddToCart = () => {
+    if (!isPriceValid || currentPrice === null) return;
     addItem({
       productId: product.id,
       name: selectedVariant ? `${product.name} (${selectedVariant.name})` : product.name,
@@ -239,7 +243,7 @@ export function ProductGalleryModal({
                       }`}
                     >
                       <span className="font-bold text-xs block">{v.name}</span>
-                      <span className="text-3xs text-neutral-500 mt-0.5 block">₹{Number(v.price).toFixed(2)}</span>
+                      <span className="text-3xs text-neutral-500 mt-0.5 block">{formatCurrency(v.price, "Call for price")}</span>
                     </button>
                   );
                 })}
@@ -251,14 +255,23 @@ export function ProductGalleryModal({
           <div className="pt-4 border-t border-neutral-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <span className="text-3xs uppercase font-extrabold text-neutral-400 block tracking-wider">Total Price</span>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-3xl font-black text-neutral-950">
-                  ₹{(currentPrice * quantity).toFixed(2)}
-                </span>
-                <span className="text-xs text-neutral-500">
-                  (₹{currentPrice.toFixed(2)} × {quantity})
-                </span>
-              </div>
+              {isPriceValid && currentPrice !== null ? (
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-3xl font-black text-neutral-950">
+                    ₹{(currentPrice * quantity).toFixed(2)}
+                  </span>
+                  <span className="text-xs text-neutral-500">
+                    (₹{currentPrice.toFixed(2)} × {quantity})
+                  </span>
+                </div>
+              ) : (
+                <div className="py-1">
+                  <span className="text-sm font-bold text-amber-700 block">
+                    Price not yet confirmed (quotation)
+                  </span>
+                  <span className="text-3xs text-neutral-500">Call merchant to confirm pricing</span>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-3">
@@ -287,9 +300,11 @@ export function ProductGalleryModal({
               <button
                 type="button"
                 onClick={handleAddToCart}
-                disabled={product.stockStatus === "OUT_OF_STOCK"}
+                disabled={product.stockStatus === "OUT_OF_STOCK" || !isPriceValid}
                 className={`flex-1 sm:flex-initial px-6 py-3 rounded-xl text-xs font-black min-h-[48px] flex items-center justify-center gap-2 transition-all ${
-                  addedAnimation 
+                  product.stockStatus === "OUT_OF_STOCK" || !isPriceValid
+                    ? "bg-neutral-200 text-neutral-400 cursor-not-allowed"
+                    : addedAnimation 
                     ? "bg-emerald-600 text-white" 
                     : "bg-[#0F766E] hover:bg-[#0D625C] disabled:bg-neutral-300 text-white shadow-xs"
                 }`}

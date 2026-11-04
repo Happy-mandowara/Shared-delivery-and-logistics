@@ -112,7 +112,7 @@ export default function CustomerCartPage() {
                       </div>
                     </div>
                     <span className="text-xs font-extrabold text-[#0F766E]">
-                      ₹{merchantSubtotal.toFixed(2)}
+                      ₹{(Number(merchantSubtotal) || 0).toFixed(2)}
                     </span>
                   </div>
 
@@ -128,7 +128,7 @@ export default function CustomerCartPage() {
                             {item.name}
                           </span>
                           <span className="text-xs font-black text-neutral-700">
-                            ₹{item.price.toFixed(2)} each
+                            ₹{(Number(item.price) || 0).toFixed(2)} each
                           </span>
                         </div>
 
@@ -179,15 +179,15 @@ export default function CustomerCartPage() {
               <div className="space-y-3 text-xs text-neutral-600 pb-4 border-b border-neutral-100">
                 <div className="flex items-center justify-between">
                   <span>Items Subtotal</span>
-                  <span className="font-bold text-neutral-900">₹{totalAmount.toFixed(2)}</span>
+                  <span className="font-bold text-neutral-900">₹{(Number(totalAmount) || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Shared Batch Delivery Fee</span>
-                  <span className="font-bold text-neutral-900">₹{deliveryFee.toFixed(2)}</span>
+                  <span className="font-bold text-neutral-900">₹{(Number(deliveryFee) || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Platform Fee</span>
-                  <span className="font-bold text-neutral-900">₹{platformFee.toFixed(2)}</span>
+                  <span className="font-bold text-neutral-900">₹{(Number(platformFee) || 0).toFixed(2)}</span>
                 </div>
               </div>
 
@@ -197,7 +197,7 @@ export default function CustomerCartPage() {
                     Total Amount
                   </span>
                   <span className="text-2xl font-black text-neutral-950">
-                    ₹{finalTotal.toFixed(2)}
+                    ₹{(Number(finalTotal) || 0).toFixed(2)}
                   </span>
                 </div>
                 <span className="text-3xs font-extrabold px-2 py-1 rounded bg-teal-50 text-[#0F766E]">

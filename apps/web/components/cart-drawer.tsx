@@ -115,7 +115,7 @@ export function CartDrawer({ onCheckout }: CartDrawerProps) {
                           <span>{group.merchantName}</span>
                         </div>
                         <span className="text-xs font-semibold text-neutral-600">
-                          ₹{group.subtotal.toFixed(2)}
+                          ₹{(Number(group.subtotal) || 0).toFixed(2)}
                         </span>
                       </div>
 
@@ -128,7 +128,7 @@ export function CartDrawer({ onCheckout }: CartDrawerProps) {
                           >
                             <div className="space-y-0.5 max-w-[190px]">
                               <p className="font-medium text-neutral-900 truncate">{item.name}</p>
-                              <p className="text-neutral-500 text-2xs">₹{item.price.toFixed(2)} each</p>
+                              <p className="text-neutral-500 text-2xs">₹{(Number(item.price) || 0).toFixed(2)} each</p>
                             </div>
 
                             {/* Quantity controls */}
@@ -184,7 +184,7 @@ export function CartDrawer({ onCheckout }: CartDrawerProps) {
               <div className="space-y-1.5 text-xs text-neutral-600">
                 <div className="flex justify-between">
                   <span>Items Subtotal</span>
-                  <span className="font-semibold text-neutral-900">₹{subtotal.toFixed(2)}</span>
+                  <span className="font-semibold text-neutral-900">₹{(Number(subtotal) || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="flex items-center gap-1">
@@ -193,11 +193,11 @@ export function CartDrawer({ onCheckout }: CartDrawerProps) {
                       DEMO
                     </span>
                   </span>
-                  <span className="font-semibold text-neutral-900">₹{deliveryFee.toFixed(2)}</span>
+                  <span className="font-semibold text-neutral-900">₹{(Number(deliveryFee) || 0).toFixed(2)}</span>
                 </div>
                 <div className="pt-2 border-t border-neutral-200 flex justify-between text-sm font-bold text-neutral-900">
                   <span>Estimated Total</span>
-                  <span className="text-teal-800">₹{total.toFixed(2)}</span>
+                  <span className="text-teal-800">₹{(Number(total) || 0).toFixed(2)}</span>
                 </div>
               </div>
 

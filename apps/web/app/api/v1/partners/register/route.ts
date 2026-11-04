@@ -97,3 +97,4 @@ export async function POST(req: NextRequest) {
     return apiError("INTERNAL_ERROR", err.message || "Failed to submit partner application", 500);
   }
 }
+

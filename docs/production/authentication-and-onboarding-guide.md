@@ -162,3 +162,4 @@ To enable Indian mobile OTP verification in compliance with TRAI (Telecom Regula
 | Product Media Resilience | Load broken image URL | Clean SVG fallback rendered without crashing |
 | Partner Verification | Admin approves rider | `verified = true`, rider can go online |
 | Customer Privacy | Inspect other customer's order | Blocked by PostgreSQL RLS with 403 / zero rows |
+

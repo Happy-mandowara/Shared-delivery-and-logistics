@@ -46,8 +46,8 @@ export async function POST(
 
     // Notify rider
     await pool.query(
-      `INSERT INTO public.notifications (user_id, role, type, title, message, link, read)
-       VALUES ($1, 'PARTNER', 'PARTNER_REJECTED', 'Partner Application Update', $2, '/register/partner', false)`,
+      `INSERT INTO public.notifications (user_id, type, title, message, deep_link)
+       VALUES ($1, 'SYSTEM_ALERT', 'Partner Application Update', $2, '/register/partner')`,
       [
         partner.user_id,
         `Your rider application for Khammam logistics was not approved: ${reason}`
@@ -57,14 +57,14 @@ export async function POST(
     // Record audit event
     await pool.query(
       `INSERT INTO public.delivery_events (
-        event_type, actor_id, actor_role, metadata, note
+        type, actor_id, message, reason, metadata
       ) VALUES ($1, $2, $3, $4, $5)`,
       [
-        "PARTNER_REJECTED",
+        "ADMIN_INTERVENTION",
         auth.user.id,
-        auth.user.role,
+        `Administrator rejected delivery partner application: ${partnerName}. Reason: ${reason}`,
+        reason,
         JSON.stringify({ partnerId: partner.id, userId: partner.user_id, partnerName, reason }),
-        `Administrator rejected delivery partner application: ${partnerName}. Reason: ${reason}`
       ]
     );
 
@@ -79,3 +79,4 @@ export async function POST(
     return apiError("REJECTION_FAILED", err.message || "Failed to reject partner application", 500);
   }
 }
+

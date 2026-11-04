@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
-import { calculateDemoDeliveryFee } from "@nationx/shared";
+import { calculateDemoDeliveryFee, parsePrice } from "@nationx/shared";
 
 export interface CartItem {
   productId: string;
@@ -35,7 +35,7 @@ interface CartContextType {
   isCartOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
-  addItem: (item: Omit<CartItem, "quantity"> & { quantity?: number }, quantity?: number) => void;
+  addItem: (item: Omit<CartItem, "quantity" | "price"> & { quantity?: number; price: number | string }, quantity?: number) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -55,7 +55,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       const saved = localStorage.getItem(CART_STORAGE_KEY);
       if (saved) {
-        setItems(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setItems(
+            parsed.map((item: any) => ({
+              ...item,
+              price: parsePrice(item.price) ?? 0,
+              quantity: Math.max(1, Number(item.quantity) || 1),
+            }))
+          );
+        }
       }
     } catch {
       // ignore
@@ -121,14 +130,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const total = subtotal + deliveryFee;
   const totalAmount = total;
 
-  const addItem = (item: Omit<CartItem, "quantity"> & { quantity?: number }, quantity = 1) => {
-    const addQty = item.quantity ?? quantity;
+  const addItem = (item: Omit<CartItem, "quantity" | "price"> & { quantity?: number; price: number | string }, quantity = 1) => {
+    const addQty = Math.max(1, item.quantity ?? quantity);
+    const normalizedPrice = parsePrice(item.price) ?? 0;
     setItems((prev) => {
       const existingIdx = prev.findIndex((i) => i.productId === item.productId);
       if (existingIdx >= 0) {
         const next = [...prev];
         next[existingIdx] = {
           ...next[existingIdx],
+          price: normalizedPrice,
           quantity: next[existingIdx].quantity + addQty,
         };
         return next;
@@ -141,7 +152,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           merchantName: item.merchantName,
           merchantLocality: item.merchantLocality,
           name: item.name,
-          price: item.price,
+          price: normalizedPrice,
           handlingTag: item.handlingTag,
           imageUrl: item.imageUrl,
           quantity: addQty,

@@ -48,7 +48,19 @@ export async function GET(
       return apiError("NOT_FOUND", "Product not found or unavailable", 404);
     }
 
-    return apiSuccess({ product: res.rows[0] });
+    const row = res.rows[0];
+    const product = {
+      ...row,
+      price: row.price !== null && row.price !== undefined ? Number(row.price) : null,
+      variants: Array.isArray(row.variants)
+        ? row.variants.map((v: any) => ({
+            ...v,
+            price: v.price !== null && v.price !== undefined ? Number(v.price) : null,
+          }))
+        : row.variants,
+    };
+
+    return apiSuccess({ product });
   } catch (err: any) {
     return apiError("DATABASE_ERROR", err.message || "Failed to fetch product details", 500);
   }

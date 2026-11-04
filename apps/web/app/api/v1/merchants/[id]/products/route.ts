@@ -75,8 +75,19 @@ export async function GET(
       [id]
     );
 
+    const products = res.rows.map((row) => ({
+      ...row,
+      price: row.price !== null && row.price !== undefined ? Number(row.price) : null,
+      variants: Array.isArray(row.variants)
+        ? row.variants.map((v: any) => ({
+            ...v,
+            price: v.price !== null && v.price !== undefined ? Number(v.price) : null,
+          }))
+        : row.variants,
+    }));
+
     return apiSuccess({
-      products: res.rows,
+      products,
       categories: catRes.rows.map((r) => r.category),
       pagination: {
         page,

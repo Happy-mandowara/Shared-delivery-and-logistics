@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest) {
 
     // Find delivery partner record
     const partnerRes = await pool.query(
-      `SELECT id FROM public.delivery_partners WHERE user_id = $1`,
+      `SELECT id, verified FROM public.delivery_partners WHERE user_id = $1`,
       [auth.user.id]
     );
 
@@ -37,7 +37,18 @@ export async function PATCH(req: NextRequest) {
       return apiError("PARTNER_NOT_FOUND", "Partner profile not found for authenticated user", 404);
     }
 
-    const partnerId = partnerRes.rows[0].id;
+    const partner = partnerRes.rows[0];
+
+    // Enforce administrative verification before going online
+    if (availability === "AVAILABLE" && !partner.verified && auth.user.role !== "ADMIN") {
+      return apiError(
+        "UNVERIFIED_PARTNER",
+        "Your delivery partner account is pending administrative verification. You cannot go online until your documents and profile are reviewed and approved.",
+        403
+      );
+    }
+
+    const partnerId = partner.id;
 
     // Update partner record
     const updateRes = await pool.query(

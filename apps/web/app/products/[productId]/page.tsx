@@ -23,6 +23,7 @@ import { PublicLayout } from "@/components/layouts/public-layout";
 import { api } from "@/lib/api-client";
 import { useCart } from "@/components/cart-context";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
+import { formatCurrency, parsePrice } from "@nationx/shared";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -180,7 +181,7 @@ export default function ProductDetailPage() {
 
                 <div className="pb-3 border-b border-neutral-100 flex items-baseline gap-2">
                   <span className="text-3xl font-black text-neutral-950">
-                    ₹{Number(product.price).toFixed(2)}
+                    {formatCurrency(product.price)}
                   </span>
                   {product.unit && (
                     <span className="text-xs text-neutral-500 font-bold">
@@ -249,7 +250,7 @@ export default function ProductDetailPage() {
                     className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[44px] shadow-xs"
                   >
                     <ShoppingBag className="w-4 h-4" />
-                    <span>Add {qty} to Order (₹{(Number(product.price) * qty).toFixed(2)})</span>
+                    <span>Add {qty} to Order ({formatCurrency(((parsePrice(product.price) ?? 0) * qty))})</span>
                   </button>
                 </div>
               </div>

@@ -325,7 +325,7 @@ export default function CustomerCheckoutPage() {
                   {g.items.map((i) => (
                     <div key={i.productId} className="flex items-center justify-between text-xs text-neutral-700">
                       <span>{i.quantity}x {i.name}</span>
-                      <strong className="text-neutral-900">₹{(i.price * i.quantity).toFixed(2)}</strong>
+                      <strong className="text-neutral-900">₹{((Number(i.price) || 0) * (Number(i.quantity) || 1)).toFixed(2)}</strong>
                     </div>
                   ))}
                 </div>
@@ -335,22 +335,22 @@ export default function CustomerCheckoutPage() {
             <div className="space-y-2 pt-3 border-t border-neutral-100 text-xs text-neutral-600">
               <div className="flex items-center justify-between">
                 <span>Subtotal ({items.length} items)</span>
-                <span>₹{totalAmount.toFixed(2)}</span>
+                <span>₹{(Number(totalAmount) || 0).toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Shared Delivery Fee</span>
-                <span>₹{deliveryFee.toFixed(2)}</span>
+                <span>₹{(Number(deliveryFee) || 0).toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Platform & Convenience Fee</span>
-                <span>₹{platformFee.toFixed(2)}</span>
+                <span>₹{(Number(platformFee) || 0).toFixed(2)}</span>
               </div>
             </div>
 
             <div className="pt-3 border-t border-neutral-100 flex items-center justify-between">
               <div>
                 <span className="text-3xs font-bold uppercase text-neutral-400 block">Total Due</span>
-                <span className="text-2xl font-black text-neutral-950">₹{finalTotal.toFixed(2)}</span>
+                <span className="text-2xl font-black text-neutral-950">₹{(Number(finalTotal) || 0).toFixed(2)}</span>
               </div>
               <span className="text-3xs font-extrabold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800">
                 {paymentMethod === "CASH_ON_DELIVERY" ? "COD at Doorstep" : "Prepaid"}

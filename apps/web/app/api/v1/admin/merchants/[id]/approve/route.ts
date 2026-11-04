@@ -31,8 +31,8 @@ export async function POST(
     // Notify merchant owner if associated with a user
     if (merchant.userId) {
       await pool.query(
-        `INSERT INTO public.notifications (user_id, role, type, title, message, link, read)
-         VALUES ($1, 'MERCHANT', 'MERCHANT_APPROVAL', 'Shop Approved & Live!', $2, '/merchant', false)`,
+        `INSERT INTO public.notifications (user_id, type, title, message, deep_link)
+         VALUES ($1, 'SYSTEM_ALERT', 'Shop Approved & Live!', $2, '/merchant')`,
         [
           merchant.userId,
           `Congratulations! Your shop "${merchant.name}" has been verified and approved by the Khammam logistics administration. You can now accept incoming customer orders.`
@@ -43,14 +43,14 @@ export async function POST(
     // Record audit event in delivery_events
     await pool.query(
       `INSERT INTO public.delivery_events (
-        event_type, actor_id, actor_role, metadata, note
+        type, actor_id, message, reason, metadata
       ) VALUES ($1, $2, $3, $4, $5)`,
       [
-        "MERCHANT_APPROVED",
+        "ADMIN_INTERVENTION",
         auth.user.id,
-        auth.user.role,
+        `Administrator approved merchant outlet: ${merchant.name}`,
+        "MERCHANT_APPROVED",
         JSON.stringify({ merchantId: merchant.id, name: merchant.name }),
-        `Administrator approved merchant outlet: ${merchant.name}`
       ]
     );
 

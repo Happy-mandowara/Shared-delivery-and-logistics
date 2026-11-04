@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { MapPin, Navigation, Search, Check, AlertCircle } from "lucide-react";
+import { calculateHaversineDistanceKm } from "@nationx/shared";
 
 interface LocationPickerMapProps {
   initialLat?: number;
@@ -240,22 +241,37 @@ export function LocationPickerMap({
         <div ref={mapContainerRef} className={`w-full ${className} z-0`} />
 
         {/* Floating Coordinates & Help Overlay */}
-        <div className="absolute bottom-2 left-2 right-2 bg-white/95 backdrop-blur-xs p-2.5 rounded-xl border border-neutral-200 shadow-sm flex flex-wrap items-center justify-between gap-2 z-10 text-3xs">
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-[#0F766E] shrink-0" />
-            <div>
-              <span className="font-bold text-neutral-900 block">
-                {currentLat.toFixed(5)}° N, {currentLng.toFixed(5)}° E
-              </span>
-              <span className="text-neutral-500">Tap anywhere on map or drag pin to adjust shop location</span>
+        {(() => {
+          const distKm = calculateHaversineDistanceKm(currentLat, currentLng, 17.2485, 80.153);
+          const isEligible = distKm <= 12.0;
+
+          return (
+            <div className="absolute bottom-2 left-2 right-2 bg-white/95 backdrop-blur-xs p-2.5 rounded-xl border border-neutral-200 shadow-sm flex flex-wrap items-center justify-between gap-2 z-10 text-3xs">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#0F766E] shrink-0" />
+                <div>
+                  <span className="font-bold text-neutral-900 block">
+                    {currentLat.toFixed(5)}° N, {currentLng.toFixed(5)}° E
+                  </span>
+                  <span className="text-neutral-500">Tap anywhere on map or drag pin to adjust shop location</span>
+                </div>
+              </div>
+              {isEligible ? (
+                <div className="flex items-center gap-1 text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded font-bold">
+                  <Check className="w-3 h-3 text-emerald-600" />
+                  <span>Khammam Central Zone ({distKm.toFixed(1)} km from hub)</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 text-amber-800 bg-amber-50 px-2 py-0.5 rounded font-bold">
+                  <AlertCircle className="w-3 h-3 text-amber-600" />
+                  <span>Outside Service Zone ({distKm.toFixed(1)} km / 12.0 km max)</span>
+                </div>
+              )}
             </div>
-          </div>
-          <div className="flex items-center gap-1 text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded font-bold">
-            <Check className="w-3 h-3" />
-            <span>Within Active Coverage Zone</span>
-          </div>
-        </div>
+          );
+        })()}
       </div>
     </div>
   );
 }
+

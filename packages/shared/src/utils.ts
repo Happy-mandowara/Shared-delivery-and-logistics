@@ -32,6 +32,31 @@ export function estimateTravelDurationMin(distanceKm: number): number {
 }
 
 /**
+ * Safely parse and normalize any price representation to a valid number.
+ * Returns null if price is missing, null, undefined, or invalid NaN.
+ */
+export function parsePrice(val: unknown): number | null {
+  if (val === null || val === undefined || val === "") return null;
+  const num = typeof val === "number" ? val : Number(val);
+  if (isNaN(num) || !isFinite(num)) return null;
+  return num;
+}
+
+/**
+ * Format any currency/price value into INR standard display string.
+ * e.g. formatCurrency(240) -> "₹240.00"
+ * Returns fallback if price is null/invalid.
+ */
+export function formatCurrency(
+  val: unknown,
+  fallback = "Price not confirmed"
+): string {
+  const num = parsePrice(val);
+  if (num === null) return fallback;
+  return `₹${num.toFixed(2)}`;
+}
+
+/**
  * Demo policy fee calculator.
  * Strictly labeled DEMO POLICY until commercial sign-off.
  */

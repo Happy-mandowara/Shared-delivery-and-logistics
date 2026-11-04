@@ -37,8 +37,8 @@ export async function POST(
 
     // Notify rider via in-app notifications
     await pool.query(
-      `INSERT INTO public.notifications (user_id, role, type, title, message, link, read)
-       VALUES ($1, 'PARTNER', 'PARTNER_VERIFIED', 'Account Verified & Ready!', $2, '/partner', false)`,
+      `INSERT INTO public.notifications (user_id, type, title, message, deep_link)
+       VALUES ($1, 'SYSTEM_ALERT', 'Account Verified & Ready!', $2, '/partner')`,
       [
         partner.user_id,
         `Congratulations ${partnerName}! Your rider application has been approved by the Khammam dispatch team. You can now toggle your status to 'AVAILABLE' to accept batch delivery jobs.`
@@ -48,14 +48,14 @@ export async function POST(
     // Record audit event in delivery_events
     await pool.query(
       `INSERT INTO public.delivery_events (
-        event_type, actor_id, actor_role, metadata, note
+        type, actor_id, message, reason, metadata
       ) VALUES ($1, $2, $3, $4, $5)`,
       [
-        "PARTNER_VERIFIED",
+        "ADMIN_INTERVENTION",
         auth.user.id,
-        auth.user.role,
+        `Administrator approved and verified delivery partner: ${partnerName} (${partner.id})`,
+        "PARTNER_VERIFIED",
         JSON.stringify({ partnerId: partner.id, userId: partner.user_id, partnerName }),
-        `Administrator approved and verified delivery partner: ${partnerName} (${partner.id})`
       ]
     );
 
@@ -70,3 +70,4 @@ export async function POST(
     return apiError("VERIFICATION_FAILED", err.message || "Failed to verify partner", 500);
   }
 }
+

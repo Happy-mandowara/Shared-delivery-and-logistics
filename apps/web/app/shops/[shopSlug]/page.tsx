@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { PublicLayout } from "@/components/layouts/public-layout";
 import { api } from "@/lib/api-client";
+import { formatCurrency } from "@nationx/shared";
 import { useCart } from "@/components/cart-context";
 import { ProductCardSkeleton } from "@/components/ui/skeleton";
 import { ProductGalleryModal } from "@/components/ui/product-gallery-modal";
@@ -339,7 +340,7 @@ export default function ShopStorefrontPage() {
                       <div>
                         <span className="text-3xs text-neutral-400 block font-bold uppercase">Price</span>
                         <span className="text-lg font-black text-neutral-900">
-                          ₹{Number(p.price).toFixed(2)}
+                          {formatCurrency(p.price)}
                         </span>
                       </div>
 

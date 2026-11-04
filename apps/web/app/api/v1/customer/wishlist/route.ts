@@ -40,7 +40,12 @@ export async function GET(req: NextRequest) {
       [auth.user.id]
     );
 
-    return apiSuccess({ wishlist: res.rows });
+    const wishlist = res.rows.map((row) => ({
+      ...row,
+      price: row.price !== null && row.price !== undefined ? Number(row.price) : null,
+    }));
+
+    return apiSuccess({ wishlist });
   } catch (err: any) {
     return apiError("DATABASE_ERROR", err.message || "Failed to fetch wishlist", 500);
   }
