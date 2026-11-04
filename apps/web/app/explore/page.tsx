@@ -122,19 +122,42 @@ export default function ExploreShopsPage() {
             {merchants.map((shop: any) => (
               <div
                 key={shop.id}
-                className="bg-white rounded-2xl p-6 border border-neutral-200 shadow-2xs hover:shadow-md hover:border-teal-300 transition-all flex flex-col justify-between"
+                className="bg-white rounded-2xl border border-neutral-200 shadow-2xs hover:shadow-md hover:border-teal-300 transition-all flex flex-col justify-between overflow-hidden"
               >
-                <div>
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-teal-50 border border-teal-200 text-[#0F766E] flex items-center justify-center font-bold text-lg">
-                      <Store className="w-6 h-6" />
+                {/* Shop Cover Photo or Graphic */}
+                {shop.cover_url ? (
+                  <div className="w-full h-32 bg-neutral-100 overflow-hidden relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-full h-16 bg-gradient-to-r from-teal-50 to-teal-100/50" />
+                )}
+
+                <div className="p-6 pt-4">
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div className="w-12 h-12 rounded-xl bg-white border border-teal-200 text-[#0F766E] flex items-center justify-center font-bold text-lg shadow-2xs overflow-hidden shrink-0 -mt-8 relative z-10">
+                      {shop.logo_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={shop.logo_url} alt={shop.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Store className="w-6 h-6" />
+                      )}
                     </div>
                     <span className="px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-3xs font-extrabold uppercase">
                       Open for Orders
                     </span>
                   </div>
 
-                  <h3 className="text-lg font-bold text-neutral-900">{shop.name}</h3>
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-lg font-bold text-neutral-900">{shop.name}</h3>
+                    {shop.rating && (
+                      <span className="text-3xs font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                        ★ {Number(shop.rating).toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+
                   <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
                     <span className="truncate">{shop.address || shop.locality || "Khammam Sector 01"}</span>
@@ -149,10 +172,10 @@ export default function ExploreShopsPage() {
                   </div>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-neutral-100 flex items-center gap-2">
+                <div className="px-6 pb-6 pt-0">
                   <Link
                     href={`/shops/${shop.id}`}
-                    className="flex-1 py-3 px-4 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+                    className="w-full py-3 px-4 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px]"
                   >
                     <span>View Storefront</span>
                     <ArrowRight className="w-4 h-4" />

@@ -134,3 +134,11 @@ export async function requireAuth(
   return { user, errorResponse: null };
 }
 
+/**
+ * Convenient helper to retrieve the authenticated user or null.
+ */
+export async function getAuthUser(req: NextRequest): Promise<UserDto | null> {
+  const { user } = await authenticateRequest(req);
+  return user;
+}
+

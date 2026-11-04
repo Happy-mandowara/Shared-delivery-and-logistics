@@ -1,0 +1,41 @@
+config:
+  target: "http://localhost:3000/api/v1"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm-up phase"
+    - duration: 60
+      arrivalRate: 20
+      rampTo: 50
+      name: "Peak load Khammam lunch rush"
+  defaults:
+    headers:
+      Accept: "application/json"
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Customer Discovery & Storefront Browse"
+    flow:
+      - get:
+          url: "/merchants?locality=Wyra%20Road"
+      - think: 1
+      - get:
+          url: "/products"
+      - think: 2
+
+  - name: "Partner Telemetry & Location Ping"
+    flow:
+      - post:
+          url: "/partners/location"
+          json:
+            latitude: 17.2472
+            longitude: 80.1514
+            locality: "Wyra Road"
+      - think: 3
+
+  - name: "Admin Dispatch Monitoring"
+    flow:
+      - get:
+          url: "/batches?status=IN_TRANSIT"
+      - get:
+          url: "/merchants"

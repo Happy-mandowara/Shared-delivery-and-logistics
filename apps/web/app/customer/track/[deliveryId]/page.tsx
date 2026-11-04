@@ -45,17 +45,30 @@ export default function CustomerDeliveryTrackingPage() {
 
   const batch = batchData;
 
-  // Convert stops to map stops
-  const stops = batch?.stops?.map((s: any) => ({
-    id: s.id,
-    name: s.type === "PICKUP" ? (s.merchant_name || "Merchant Shop") : (s.customer_name || "Customer Drop-off"),
-    address: s.address || "Khammam Sector 01",
-    lat: Number(s.latitude) || 17.2472,
-    lng: Number(s.longitude) || 80.1514,
-    type: s.type as "PICKUP" | "DROPOFF",
-    status: s.status as "PENDING" | "COMPLETED" | "FAILED",
-    locality: s.locality || "Wyra Road"
-  })) || [
+  // Convert stops to map stops with strict Rule 9 Customer Privacy Masking
+  const stops = batch?.stops?.map((s: any) => {
+    const isPickup = s.type === "PICKUP";
+    const isCurrentUserStop = s.is_current_user || s.customer_id === batch?.customer_id;
+
+    return {
+      id: s.id,
+      name: isPickup 
+        ? (s.merchant_name || "Merchant Shop")
+        : isCurrentUserStop
+          ? "Your Drop-off Location"
+          : "Neighbourhood Stop (Masked for Privacy)",
+      address: isPickup
+        ? (s.address || "Khammam Sector 01")
+        : isCurrentUserStop
+          ? (s.address || "Your Address")
+          : "Wyra Road Corridor · PII Protected",
+      lat: Number(s.latitude) || 17.2472,
+      lng: Number(s.longitude) || 80.1514,
+      type: s.type as "PICKUP" | "DROPOFF",
+      status: s.status as "PENDING" | "COMPLETED" | "FAILED",
+      locality: s.locality || "Wyra Road"
+    };
+  }) || [
     {
       id: "shop-default",
       name: "Bawarchi Restaurant",

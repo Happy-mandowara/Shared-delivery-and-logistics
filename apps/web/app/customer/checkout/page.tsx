@@ -115,6 +115,19 @@ export default function CustomerCheckoutPage() {
 
       const orderId = res.data?.id || res.data?.order?.id;
       if (res.success && orderId) {
+        if (paymentMethod === "ONLINE") {
+          // Initialize and verify online payment transaction
+          await api.post<any>("/payments/create-order", {
+            orderId,
+            amount: finalTotal,
+            paymentMethod: "UPI"
+          });
+          await api.post<any>("/payments/verify", {
+            orderId,
+            paymentId: `pay_upi_${Date.now()}`
+          });
+        }
+
         clearCart();
         router.push(`/customer/orders/${orderId}`);
       } else {

@@ -17,12 +17,15 @@ import {
   AlertCircle, 
   Sparkles,
   ShieldCheck,
-  Search
+  Search,
+  Package,
+  Heart
 } from "lucide-react";
 import { PublicLayout } from "@/components/layouts/public-layout";
 import { api } from "@/lib/api-client";
 import { useCart } from "@/components/cart-context";
 import { ProductCardSkeleton } from "@/components/ui/skeleton";
+import { ProductGalleryModal } from "@/components/ui/product-gallery-modal";
 
 export default function ShopStorefrontPage() {
   const params = useParams();
@@ -31,6 +34,7 @@ export default function ShopStorefrontPage() {
   const { addItem, updateQuantity, items: cartItems, openCart } = useCart();
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [productSearch, setProductSearch] = useState("");
+  const [selectedProductForModal, setSelectedProductForModal] = useState<any | null>(null);
 
   // 1. Fetch Merchant Details
   const { data: merchantData, isLoading: isLoadingMerchant } = useQuery({
@@ -201,10 +205,11 @@ export default function ShopStorefrontPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProducts.map((p: any) => {
                 const quantity = getItemQuantity(p.id);
+                const primaryImg = (p.image_urls && p.image_urls[0]) || p.image_url;
                 return (
                   <div
                     key={p.id}
-                    className="p-5 rounded-2xl bg-white border border-neutral-200 shadow-2xs hover:border-teal-300 transition-all flex flex-col justify-between"
+                    className="p-5 rounded-2xl bg-white border border-neutral-200 shadow-2xs hover:border-teal-300 transition-all flex flex-col justify-between group"
                   >
                     <div>
                       {/* Product Header Badges */}
@@ -224,21 +229,57 @@ export default function ShopStorefrontPage() {
                         )}
                       </div>
 
-                      <h3 className="text-base font-bold text-neutral-900 leading-snug">
-                        {p.name}
-                      </h3>
-                      {p.description && (
-                        <p className="text-xs text-neutral-500 mt-1 line-clamp-2">
-                          {p.description}
-                        </p>
-                      )}
+                      {/* Image Thumbnail and Details Clickable */}
+                      <div 
+                        onClick={() => setSelectedProductForModal(p)}
+                        className="cursor-pointer space-y-3"
+                      >
+                        {primaryImg && (
+                          <div className="w-full h-40 rounded-xl bg-neutral-100 overflow-hidden relative border border-neutral-100">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={primaryImg}
+                              alt={p.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            {p.image_urls && p.image_urls.length > 1 && (
+                              <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/60 text-white text-3xs font-bold backdrop-blur-xs">
+                                +{p.image_urls.length - 1} photos
+                              </span>
+                            )}
+                          </div>
+                        )}
 
-                      {/* Handling Requirements */}
-                      {p.handling_requirements && p.handling_requirements !== "STANDARD" && (
-                        <div className="mt-2 inline-flex items-center gap-1 text-3xs font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
-                          <span>Special: {p.handling_requirements}</span>
+                        <div>
+                          <h3 className="text-base font-bold text-neutral-900 leading-snug group-hover:text-[#0F766E] transition-colors">
+                            {p.name}
+                          </h3>
+                          {p.description && (
+                            <p className="text-xs text-neutral-500 mt-1 line-clamp-2">
+                              {p.description}
+                            </p>
+                          )}
                         </div>
-                      )}
+                      </div>
+
+                      {/* Handling Requirements & Variants Badges */}
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                        {p.handling_requirements && p.handling_requirements !== "STANDARD" && (
+                          <span className="inline-flex items-center gap-1 text-3xs font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                            Special: {p.handling_requirements}
+                          </span>
+                        )}
+                        {p.unit && (
+                          <span className="text-3xs font-semibold px-2 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200">
+                            per {p.unit}
+                          </span>
+                        )}
+                        {p.variants && Array.isArray(p.variants) && p.variants.length > 0 && (
+                          <span className="text-3xs font-semibold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                            {p.variants.length} sizes/options
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Price and Cart Interaction */}
@@ -296,6 +337,14 @@ export default function ShopStorefrontPage() {
           )}
         </div>
       </div>
+
+      {/* Product Gallery Modal */}
+      <ProductGalleryModal
+        product={selectedProductForModal}
+        isOpen={Boolean(selectedProductForModal)}
+        onClose={() => setSelectedProductForModal(null)}
+        merchantName={merchant?.name}
+      />
     </PublicLayout>
   );
 }

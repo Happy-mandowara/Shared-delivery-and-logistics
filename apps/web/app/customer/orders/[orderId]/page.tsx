@@ -127,7 +127,7 @@ export default function CustomerOrderDetailPage() {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {(order.batch_id || order.batchId) && (
               <Link
                 href={`/customer/track/${order.batch_id || order.batchId}`}
@@ -137,6 +137,13 @@ export default function CustomerOrderDetailPage() {
                 <span>Live Route Tracking</span>
               </Link>
             )}
+            <Link
+              href={`/customer/orders/${order.id}/complaint`}
+              className="px-4 py-2.5 rounded-xl border border-neutral-300 hover:bg-neutral-50 text-neutral-700 text-xs font-bold transition-colors flex items-center gap-1.5 min-h-[44px]"
+            >
+              <AlertTriangle className="w-4 h-4 text-amber-600" />
+              <span>Report Item Defect</span>
+            </Link>
             {isCancellable && (
               <button
                 onClick={() => setShowCancelModal(true)}

@@ -1,36 +1,35 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Heart, Store, ArrowRight, ShoppingBag, Plus, Trash2 } from "lucide-react";
 import { useCart } from "@/components/cart-context";
+import { api } from "@/lib/api-client";
+import { TableRowSkeleton } from "@/components/ui/skeleton";
 
 export default function CustomerWishlistPage() {
   const { addItem, openCart } = useCart();
-  const [savedItems, setSavedItems] = useState([
-    {
-      id: "prod-bawarchi-1",
-      name: "Special Chicken Dum Biryani (Single Pack)",
-      merchantId: "10000000-0000-0000-0000-000000000001",
-      merchantName: "Bawarchi Restaurant",
-      price: 240,
-      category: "Restaurants",
-      locality: "Wyra Road"
-    },
-    {
-      id: "prod-balaji-1",
-      name: "Heritage Full Cream Milk (500ml)",
-      merchantId: "10000000-0000-0000-0000-000000000002",
-      merchantName: "Sri Balaji Supermarket",
-      price: 36,
-      category: "Dairy",
-      locality: "Bus Stand Road"
-    }
-  ]);
+  const queryClient = useQueryClient();
 
-  const handleRemove = (id: string) => {
-    setSavedItems(savedItems.filter(i => i.id !== id));
-  };
+  const { data: wishlistData, isLoading } = useQuery({
+    queryKey: ["customer-wishlist"],
+    queryFn: async () => {
+      const res = await api.get<any>("/customer/wishlist");
+      return res.data?.wishlist || [];
+    },
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      await api.delete(`/customer/wishlist/${productId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customer-wishlist"] });
+    },
+  });
+
+  const savedItems = wishlistData || [];
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -43,7 +42,12 @@ export default function CustomerWishlistPage() {
         </p>
       </div>
 
-      {savedItems.length === 0 ? (
+      {isLoading ? (
+        <div className="bg-white p-6 rounded-2xl border border-neutral-200 space-y-3">
+          <TableRowSkeleton />
+          <TableRowSkeleton />
+        </div>
+      ) : savedItems.length === 0 ? (
         <div className="p-12 text-center bg-white rounded-3xl border border-neutral-200 space-y-4">
           <Heart className="w-12 h-12 text-neutral-300 mx-auto" />
           <h2 className="text-base font-bold text-neutral-900">No saved items yet</h2>
@@ -57,7 +61,7 @@ export default function CustomerWishlistPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {savedItems.map((item) => (
+          {savedItems.map((item: any) => (
             <div
               key={item.id}
               className="p-5 rounded-2xl bg-white border border-neutral-200 shadow-2xs flex flex-col justify-between"
@@ -68,7 +72,8 @@ export default function CustomerWishlistPage() {
                     {item.category}
                   </span>
                   <button
-                    onClick={() => handleRemove(item.id)}
+                    onClick={() => removeMutation.mutate(item.id)}
+                    disabled={removeMutation.isPending}
                     className="p-1 text-neutral-400 hover:text-rose-600 rounded"
                     title="Remove from Saved"
                   >
@@ -76,34 +81,47 @@ export default function CustomerWishlistPage() {
                   </button>
                 </div>
 
-                <h3 className="text-base font-bold text-neutral-900 leading-snug">
-                  {item.name}
-                </h3>
-                <span className="text-xs text-teal-800 font-semibold block mt-1">
-                  Sold by {item.merchantName} ({item.locality})
-                </span>
+                <div className="flex items-center gap-3">
+                  {item.imageUrl && (
+                    <img 
+                      src={item.imageUrl} 
+                      alt={item.name} 
+                      className="w-16 h-16 rounded-xl object-cover shrink-0 border border-neutral-200"
+                    />
+                  )}
+                  <div>
+                    <h3 className="text-sm font-bold text-neutral-900 leading-snug">
+                      {item.name}
+                    </h3>
+                    <span className="text-3xs text-teal-800 font-semibold block mt-0.5">
+                      Sold by {item.merchantName} ({item.merchantLocality || "Khammam"})
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className="mt-5 pt-3 border-t border-neutral-100 flex items-center justify-between">
                 <span className="text-lg font-black text-neutral-900">
-                  ₹{item.price.toFixed(2)}
+                  ₹{Number(item.price).toFixed(2)}
                 </span>
                 <button
                   onClick={() => {
                     addItem({
-                      productId: item.id,
-                      merchantId: item.merchantId,
-                      merchantName: item.merchantName,
+                      id: item.id,
                       name: item.name,
-                      price: item.price,
+                      price: Number(item.price),
+                      shopId: item.merchantId,
+                      shopName: item.merchantName || "Local Merchant",
+                      imageUrl: item.imageUrl,
                       quantity: 1,
+                      handlingTag: item.handlingTag,
                     });
                     openCart();
                   }}
-                  className="px-4 py-2 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] text-white text-xs font-bold transition-colors flex items-center gap-1.5 min-h-[40px]"
+                  className="px-4 py-2 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>Add to Order</span>
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                  <span>Add to Cart</span>
                 </button>
               </div>
             </div>

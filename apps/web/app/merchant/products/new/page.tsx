@@ -3,8 +3,14 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Plus, CheckCircle2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, CheckCircle2, AlertCircle, Layers } from "lucide-react";
 import { api } from "@/lib/api-client";
+import { ImageUploader } from "@/components/ui/image-uploader";
+
+interface ProductVariant {
+  name: string;
+  price: number;
+}
 
 export default function MerchantCreateProductPage() {
   const router = useRouter();
@@ -12,10 +18,29 @@ export default function MerchantCreateProductPage() {
   const [category, setCategory] = useState("Restaurants");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("150");
+  const [unit, setUnit] = useState("piece");
+  const [weightGrams, setWeightGrams] = useState("");
   const [handling, setHandling] = useState("STANDARD");
   const [stockStatus, setStockStatus] = useState("IN_STOCK");
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Variant handlers
+  const addVariant = () => {
+    setVariants([...variants, { name: "", price: parseFloat(price) || 0 }]);
+  };
+
+  const removeVariant = (index: number) => {
+    setVariants(variants.filter((_, i) => i !== index));
+  };
+
+  const updateVariant = (index: number, field: "name" | "price", val: any) => {
+    const updated = [...variants];
+    updated[index] = { ...updated[index], [field]: field === "price" ? parseFloat(val) || 0 : val };
+    setVariants(updated);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,13 +48,19 @@ export default function MerchantCreateProductPage() {
     setErrorMsg(null);
 
     try {
+      const validVariants = variants.filter(v => v.name.trim() !== "");
       const res = await api.post<any>("/products", {
         name,
         category,
         description,
         price: parseFloat(price),
+        unit,
+        weight_grams: weightGrams ? parseInt(weightGrams) : undefined,
         handling_requirements: handling,
         stock_status: stockStatus,
+        image_url: imageUrls[0] || undefined,
+        image_urls: imageUrls,
+        variants: validVariants.length > 0 ? validVariants : undefined,
       });
 
       if (res.data?.success) {
@@ -45,7 +76,7 @@ export default function MerchantCreateProductPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6">
       <Link
         href="/merchant/products"
         className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-600 hover:text-neutral-900 min-h-[44px]"
@@ -60,7 +91,7 @@ export default function MerchantCreateProductPage() {
             Add New Product
           </h1>
           <p className="text-xs sm:text-sm text-neutral-600">
-            Create a new item in your Khammam store catalog with authoritative pricing.
+            Create an item in your store catalog with multi-image gallery, units, and custom variants.
           </p>
         </div>
 
@@ -71,7 +102,22 @@ export default function MerchantCreateProductPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Photos Upload */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-neutral-900 block">
+              Product Photographs & Gallery
+            </label>
+            <p className="text-3xs text-neutral-500">
+              Upload high-resolution pictures. First image will be the primary catalogue cover. Compressed client-side to WebP for fast 3G loading.
+            </p>
+            <ImageUploader
+              value={imageUrls}
+              onChange={setImageUrls}
+              maxImages={6}
+            />
+          </div>
+
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-neutral-900 block" htmlFor="pName">
               Product Name <span className="text-rose-500">*</span>
@@ -80,14 +126,14 @@ export default function MerchantCreateProductPage() {
               id="pName"
               required
               type="text"
-              placeholder="e.g. Chicken 65 (Full Plate)"
+              placeholder="e.g. Chicken Dum Biryani"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#0F766E] min-h-[44px]"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-neutral-900 block" htmlFor="pCat">
                 Category <span className="text-rose-500">*</span>
@@ -109,7 +155,7 @@ export default function MerchantCreateProductPage() {
 
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-neutral-900 block" htmlFor="pPrice">
-                Price in ₹ (INR) <span className="text-rose-500">*</span>
+                Base Price in ₹ <span className="text-rose-500">*</span>
               </label>
               <input
                 id="pPrice"
@@ -123,6 +169,25 @@ export default function MerchantCreateProductPage() {
                 className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#0F766E] min-h-[44px]"
               />
             </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-neutral-900 block" htmlFor="pUnit">
+                Selling Unit
+              </label>
+              <select
+                id="pUnit"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#0F766E] bg-white min-h-[44px]"
+              >
+                <option value="piece">Per Piece</option>
+                <option value="plate">Per Plate</option>
+                <option value="kg">Per Kilogram (kg)</option>
+                <option value="gram">Per 100g / 500g</option>
+                <option value="litre">Per Litre</option>
+                <option value="packet">Per Packet / Box</option>
+              </select>
+            </div>
           </div>
 
           <div className="space-y-1.5">
@@ -132,17 +197,69 @@ export default function MerchantCreateProductPage() {
             <textarea
               id="pDesc"
               rows={3}
-              placeholder="Crispy fried spicy chicken with curry leaves and green chillies."
+              placeholder="Freshly prepared with authentic spices, tender chicken, and served with mirchi ka salan."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#0F766E]"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Variants Builder */}
+          <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-neutral-900 block">Product Variants & Sizes</span>
+                <span className="text-3xs text-neutral-500">Optional: Offer portion sizes like Single, Full, or Family Pack.</span>
+              </div>
+              <button
+                type="button"
+                onClick={addVariant}
+                className="px-3 py-1.5 rounded-lg bg-white border border-neutral-300 text-xs font-bold text-[#0F766E] hover:bg-neutral-100 flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Variant</span>
+              </button>
+            </div>
+
+            {variants.length > 0 && (
+              <div className="space-y-2 pt-2">
+                {variants.map((v, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. Single / Full / 500ml"
+                      value={v.name}
+                      onChange={(e) => updateVariant(idx, "name", e.target.value)}
+                      className="flex-1 px-3 py-2 rounded-xl border border-neutral-300 text-xs bg-white focus:ring-2 focus:ring-[#0F766E]"
+                    />
+                    <div className="relative w-32">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-400">₹</span>
+                      <input
+                        type="number"
+                        placeholder="Price"
+                        value={v.price}
+                        onChange={(e) => updateVariant(idx, "price", e.target.value)}
+                        className="w-full pl-7 pr-3 py-2 rounded-xl border border-neutral-300 text-xs bg-white focus:ring-2 focus:ring-[#0F766E]"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeVariant(idx)}
+                      className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg"
+                      title="Remove variant"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-neutral-900 block" htmlFor="pHandling">
-                Special Handling Requirements
+                Handling Requirements
               </label>
               <select
                 id="pHandling"
@@ -172,6 +289,20 @@ export default function MerchantCreateProductPage() {
                 <option value="CALL_TO_CONFIRM">Call to confirm</option>
                 <option value="OUT_OF_STOCK">Out of Stock</option>
               </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-neutral-900 block" htmlFor="pWeight">
+                Estimated Weight (Grams)
+              </label>
+              <input
+                id="pWeight"
+                type="number"
+                placeholder="e.g. 750"
+                value={weightGrams}
+                onChange={(e) => setWeightGrams(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#0F766E] min-h-[44px]"
+              />
             </div>
           </div>
 

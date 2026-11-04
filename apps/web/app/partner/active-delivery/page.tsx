@@ -76,10 +76,23 @@ export default function PartnerActiveDeliveryCockpitPage() {
   // Exception Mutation
   const reportExceptionMutation = useMutation({
     mutationFn: async ({ stopId, reason, notes }: { stopId: string; reason: string; notes: string }) => {
+      // 1. Record stop exception event
       const res = await api.post<any>(`/stops/${stopId}/exception`, {
         reason,
         notes,
       });
+
+      // 2. Also record in incident reports cockpit
+      try {
+        await api.post<any>("/partners/incidents", {
+          stopId,
+          category: reason,
+          description: notes,
+        });
+      } catch (e) {
+        // Log silently if incident table logging fails
+      }
+
       return res.data;
     },
     onSuccess: () => {
