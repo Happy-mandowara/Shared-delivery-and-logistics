@@ -33,15 +33,17 @@ export default function RebuiltHomePage() {
   const { addItem, items: cartItems } = useCart();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocality, setSelectedLocality] = useState<string>("ALL");
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
 
   // 1. Fetch Verified Pilot Merchants
   const { data: merchantsData, isLoading: isLoadingMerchants } = useQuery({
-    queryKey: ["merchants", searchQuery, selectedLocality],
+    queryKey: ["merchants", searchQuery, selectedLocality, selectedCategory],
     queryFn: async () => {
       let url = "/merchants";
       const params = new URLSearchParams();
       if (searchQuery.trim()) params.append("search", searchQuery.trim());
       if (selectedLocality !== "ALL") params.append("locality", selectedLocality);
+      if (selectedCategory !== "ALL") params.append("category", selectedCategory);
       if (params.toString()) url += `?${params.toString()}`;
 
       const res = await api.get<any>(url);
@@ -60,12 +62,12 @@ export default function RebuiltHomePage() {
   ];
 
   const categories = [
-    { title: "Hot Kitchens & Biryani", count: "12 Menus", icon: "🍛", href: "/categories?c=Restaurants" },
-    { title: "Kirana & Staples", count: "84 Items", icon: "🌾", href: "/categories?c=Groceries" },
-    { title: "Daily Dairy & Bakery", count: "28 Items", icon: "🥛", href: "/categories?c=Dairy" },
-    { title: "Fresh Fruits & Veggies", count: "45 Items", icon: "🥬", href: "/categories?c=Produce" },
-    { title: "Pharma & Wellness", count: "60 Essentials", icon: "💊", href: "/categories?c=Pharmacy" },
-    { title: "Traditional Sweets", count: "19 Delicacies", icon: "🍬", href: "/categories?c=Sweets" },
+    { title: "Hot Kitchens & Biryani", key: "Restaurants", count: "Verified Menus", icon: "🍛" },
+    { title: "Kirana & Staples", key: "Groceries & Staples", count: "Daily Essentials", icon: "🌾" },
+    { title: "Daily Dairy & Sweets", key: "Dairy & Eggs", count: "Fresh Products", icon: "🥛" },
+    { title: "Super Bazaar & Marts", key: "Groceries & Daily Essentials", count: "Household", icon: "🥬" },
+    { title: "Traditional Sweets", key: "Sweets & Bakery", count: "Regional Delicacies", icon: "🍬" },
+    { title: "Fresh Produce & Essentials", key: "Groceries", count: "Local Outlets", icon: "🥕" },
   ];
 
   // Map markers for verified stops in Khammam
@@ -317,9 +319,9 @@ export default function RebuiltHomePage() {
       </section>
 
       {/* SECTION 3: VERIFIED KHAMMAM SHOPS */}
-      <section className="py-20 bg-[#F8FAFA] border-b border-neutral-200">
+      <section id="stores-section" className="py-20 bg-[#F8FAFA] border-b border-neutral-200 scroll-mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
             <div>
               <span className="text-xs uppercase font-extrabold tracking-widest text-[#0F766E] block mb-2">
                 Verified Partners
@@ -328,57 +330,84 @@ export default function RebuiltHomePage() {
                 Featured Khammam Merchant Outlets
               </h2>
               <p className="mt-2 text-sm text-neutral-600">
-                Every merchant is verified with physical storefront inspection and live inventory tracking.
+                {selectedCategory !== "ALL" ? (
+                  <span className="flex items-center gap-2 mt-1">
+                    <span>Showing verified outlets in category: <strong>{selectedCategory}</strong></span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategory("ALL")}
+                      className="text-xs font-bold text-[#0F766E] hover:underline"
+                    >
+                      (Clear filter & show all)
+                    </button>
+                  </span>
+                ) : (
+                  "Every merchant is verified with physical storefront inspection and live inventory tracking."
+                )}
               </p>
             </div>
             <Link
               href="/explore"
               className="inline-flex items-center gap-2 text-sm font-bold text-[#0F766E] hover:text-[#0D625C] min-h-[48px]"
             >
-              <span>View all shops</span>
+              <span>View all shops directory</span>
               <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {merchants.map((m: any) => (
-              <div
-                key={m.id}
-                className="bg-white rounded-2xl p-6 border border-neutral-200/90 shadow-2xs hover:shadow-md hover:border-teal-300 transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-teal-50 border border-teal-200 text-[#0F766E] flex items-center justify-center font-bold text-lg">
-                      <Store className="w-6 h-6" />
-                    </div>
-                    <span className="px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-3xs font-extrabold uppercase">
-                      Ready for Orders
-                    </span>
-                  </div>
-
-                  <h3 className="text-lg font-bold text-neutral-900">{m.name}</h3>
-                  <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                    <span className="truncate">{m.address || m.locality || "Khammam"}</span>
-                  </p>
-
-                  <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-600">
-                    <span className="font-semibold text-teal-800">{m.locality || "Central Zone"}</span>
-                    <span>15–25 mins prep</span>
-                  </div>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-neutral-100">
-                  <Link
-                    href={`/shops/${m.id}`}
-                    className="w-full py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-[#0F766E] text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[44px]"
-                  >
-                    <span>Browse Storefront</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
+            {merchants.length === 0 ? (
+              <div className="col-span-full p-12 text-center bg-white rounded-3xl border border-neutral-200">
+                <Store className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
+                <h3 className="text-base font-bold text-neutral-900">No stores found in this category</h3>
+                <p className="text-xs text-neutral-500 mt-1">Try selecting another category or clear the filter.</p>
+                <button
+                  onClick={() => setSelectedCategory("ALL")}
+                  className="mt-3 px-4 py-2 rounded-xl bg-[#0F766E] text-white text-xs font-bold"
+                >
+                  Show All Stores
+                </button>
               </div>
-            ))}
+            ) : (
+              merchants.map((m: any) => (
+                <div
+                  key={m.id}
+                  className="bg-white rounded-2xl p-6 border border-neutral-200/90 shadow-2xs hover:shadow-md hover:border-teal-300 transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div className="w-12 h-12 rounded-xl bg-teal-50 border border-teal-200 text-[#0F766E] flex items-center justify-center font-bold text-lg">
+                        <Store className="w-6 h-6" />
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-3xs font-extrabold uppercase">
+                        {m.category || "Active Outlet"}
+                      </span>
+                    </div>
+
+                    <h3 className="text-lg font-bold text-neutral-900">{m.name}</h3>
+                    <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                      <span className="truncate">{m.address || m.locality || "Khammam"}</span>
+                    </p>
+
+                    <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-600">
+                      <span className="font-semibold text-teal-800">{m.locality || "Central Zone"}</span>
+                      <span>15–25 mins prep</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-neutral-100">
+                    <Link
+                      href={`/shops/${m.id}`}
+                      className="w-full py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-[#0F766E] text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+                    >
+                      <span>Browse Storefront</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -393,19 +422,31 @@ export default function RebuiltHomePage() {
             <h2 className="text-3xl font-extrabold text-neutral-950 tracking-tight">
               Everything Khammam Has to Offer
             </h2>
+            <p className="text-xs text-neutral-500 mt-1">
+              Select any category to view verified merchant outlets in Khammam
+            </p>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {categories.map((cat) => (
-              <Link
+              <button
                 key={cat.title}
-                href={cat.href}
-                className="p-5 rounded-2xl bg-[#F8FAFA] border border-neutral-200 text-center hover:border-teal-400 hover:bg-teal-50/40 transition-all group flex flex-col items-center justify-center min-h-[140px]"
+                type="button"
+                onClick={() => {
+                  setSelectedCategory(cat.key);
+                  const el = document.getElementById("stores-section");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                }}
+                className={`p-5 rounded-2xl border text-center transition-all group flex flex-col items-center justify-center min-h-[140px] cursor-pointer ${
+                  selectedCategory === cat.key
+                    ? "bg-teal-50/80 border-[#0F766E] shadow-sm ring-2 ring-[#0F766E]"
+                    : "bg-[#F8FAFA] border-neutral-200 hover:border-teal-400 hover:bg-teal-50/40"
+                }`}
               >
                 <span className="text-3xl mb-3 group-hover:scale-110 transition-transform">{cat.icon}</span>
                 <span className="text-xs font-bold text-neutral-900 block leading-tight">{cat.title}</span>
                 <span className="text-3xs text-neutral-500 font-semibold mt-1">{cat.count}</span>
-              </Link>
+              </button>
             ))}
           </div>
         </div>
@@ -568,66 +609,7 @@ export default function RebuiltHomePage() {
         </div>
       </section>
 
-      {/* SECTION 7: TESTIMONIALS & PILOT STORIES */}
-      <section className="py-20 bg-[#F8FAFA] border-b border-neutral-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-14">
-            <span className="text-xs uppercase font-extrabold tracking-widest text-[#0F766E] block mb-2">
-              Community Feedback
-            </span>
-            <h2 className="text-3xl font-extrabold text-neutral-950 tracking-tight">
-              Trusted by Local Shops & Families
-            </h2>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 rounded-2xl bg-white border border-neutral-200 shadow-2xs">
-              <p className="text-sm text-neutral-600 leading-relaxed italic">
-                &ldquo;We used to lose customers who wanted groceries alongside our dinner orders. Now a single delivery partner picks up biryani and items from Balaji next door.&rdquo;
-              </p>
-              <div className="mt-6 pt-4 border-t border-neutral-100 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-xs">
-                  BB
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-neutral-900 block">Bawarchi Restaurant</span>
-                  <span className="text-3xs text-neutral-500">Wyra Road, Khammam</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-white border border-neutral-200 shadow-2xs">
-              <p className="text-sm text-neutral-600 leading-relaxed italic">
-                &ldquo;I ordered lunch and weekly groceries in one transaction. It arrived in one bag run, and the PIN verification gave me confidence the order wasn&apos;t left at the wrong door.&rdquo;
-              </p>
-              <div className="mt-6 pt-4 border-t border-neutral-100 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
-                  SK
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-neutral-900 block">Srinivas K.</span>
-                  <span className="text-3xs text-neutral-500">Mamata Hospital Quarters</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-white border border-neutral-200 shadow-2xs">
-              <p className="text-sm text-neutral-600 leading-relaxed italic">
-                &ldquo;With shared batches, my fuel costs dropped 35% because I deliver 2 orders in one cluster instead of riding 8 km across town twice.&rdquo;
-              </p>
-              <div className="mt-6 pt-4 border-t border-neutral-100 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-neutral-900 text-white flex items-center justify-center font-bold text-xs">
-                  VR
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-neutral-900 block">Venkatesh R.</span>
-                  <span className="text-3xs text-neutral-500">Delivery Partner #01</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* SECTION 8: DUAL ONBOARDING CALL TO ACTION */}
       <section className="py-20 bg-gradient-to-r from-teal-900 via-[#0F766E] to-teal-900 text-white">

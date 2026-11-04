@@ -15,12 +15,18 @@ import {
   AlertCircle, 
   ShoppingBag,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Layers,
+  UtensilsCrossed,
+  Pill,
+  Smartphone,
+  Apple
 } from "lucide-react";
 import { useAuth } from "@/components/providers";
 import { api } from "@/lib/api-client";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Timeline } from "@/components/ui/timeline";
+import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 
 export default function CustomerDashboardPage() {
   const { user } = useAuth();
@@ -41,6 +47,16 @@ export default function CustomerDashboardPage() {
       const res = await api.get<any>("/merchants");
       return res.data?.merchants?.slice(0, 3) || [];
     },
+  });
+
+  // 3. Fetch Categories
+  const { data: categoriesData } = useQuery({
+    queryKey: ["customer-categories"],
+    queryFn: async () => {
+      const res = await api.get<any>("/categories");
+      return res.data?.merchantCategories || [];
+    },
+    staleTime: 60000,
   });
 
   const orders = ordersData || [];
@@ -83,6 +99,72 @@ export default function CustomerDashboardPage() {
           >
             <span>My Cart</span>
           </Link>
+        </div>
+      </div>
+
+      {/* Browse by Category Section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-black text-neutral-950 tracking-tight flex items-center gap-2">
+              <Layers className="w-5 h-5 text-[#0F766E]" />
+              <span>Explore by Category</span>
+            </h2>
+            <p className="text-xs text-neutral-500">Discover local merchants organized by sector in Khammam</p>
+          </div>
+          <Link
+            href="/customer/explore"
+            className="text-xs font-bold text-[#0F766E] hover:underline flex items-center gap-1"
+          >
+            <span>View All Stores</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {(categoriesData && categoriesData.length > 0 ? categoriesData : [
+            { name: "Groceries", merchantCount: 2 },
+            { name: "Restaurants", merchantCount: 3 },
+            { name: "Medical & Pharmacy", merchantCount: 1 },
+            { name: "Bakery & Sweets", merchantCount: 1 },
+            { name: "Fresh Produce", merchantCount: 1 },
+            { name: "General Stores", merchantCount: 1 },
+          ]).map((cat: any) => {
+            const isFood = /restaurant|food|biryani|kitchen/i.test(cat.name);
+            const isMedical = /medic|pharm/i.test(cat.name);
+            const isTech = /elec|mobile/i.test(cat.name);
+            const isGrocery = /groc|produce|veg|fruit/i.test(cat.name);
+
+            return (
+              <Link
+                key={cat.name}
+                href={`/customer/explore?category=${encodeURIComponent(cat.name)}`}
+                className="p-3.5 rounded-2xl bg-white border border-neutral-200 hover:border-teal-400 hover:shadow-xs transition-all group flex flex-col items-center text-center gap-2 min-h-[96px] justify-center"
+              >
+                <div className="w-10 h-10 rounded-xl bg-teal-50 group-hover:bg-[#0F766E] group-hover:text-white text-[#0F766E] flex items-center justify-center transition-colors">
+                  {isFood ? (
+                    <UtensilsCrossed className="w-5 h-5" />
+                  ) : isMedical ? (
+                    <Pill className="w-5 h-5" />
+                  ) : isTech ? (
+                    <Smartphone className="w-5 h-5" />
+                  ) : isGrocery ? (
+                    <Apple className="w-5 h-5" />
+                  ) : (
+                    <Store className="w-5 h-5" />
+                  )}
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-neutral-900 group-hover:text-[#0F766E] block truncate max-w-[110px]">
+                    {cat.name}
+                  </span>
+                  <span className="text-3xs text-neutral-500 font-medium">
+                    {cat.merchantCount} {cat.merchantCount === 1 ? "store" : "stores"}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
 

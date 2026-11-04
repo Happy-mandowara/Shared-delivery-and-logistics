@@ -10,7 +10,8 @@ import {
   ShieldCheck, 
   IndianRupee, 
   Sparkles,
-  PhoneCall
+  PhoneCall,
+  AlertCircle
 } from "lucide-react";
 import { PublicLayout } from "@/components/layouts/public-layout";
 
@@ -18,16 +19,39 @@ export default function RegisterPartnerPage() {
   const [formData, setFormData] = useState({
     fullName: "",
     phone: "",
+    email: "",
     drivingLicense: "",
-    vehicleType: "Motorcycle / Geared Bike",
+    vehicleType: "TWO_WHEELER",
     locality: "Wyra Road",
     hasSmartPhone: true
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
+    setErrorMessage(null);
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/v1/partners/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsSubmitted(true);
+      } else {
+        setErrorMessage(data.error?.message || "Failed to submit partner application. Please try again.");
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || "An error occurred while submitting your application.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -69,6 +93,13 @@ export default function RegisterPartnerPage() {
             onSubmit={handleSubmit}
             className="p-8 rounded-3xl bg-white border border-neutral-200 shadow-2xs space-y-6"
           >
+            {errorMessage && (
+              <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2.5 text-xs text-[#B42318]">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {/* Full Name */}
               <div className="space-y-1.5">
@@ -167,9 +198,10 @@ export default function RegisterPartnerPage() {
 
             <button
               type="submit"
-              className="w-full py-4 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] text-white text-sm font-extrabold shadow-sm transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+              disabled={isLoading}
+              className="w-full py-4 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] disabled:bg-neutral-400 text-white text-sm font-extrabold shadow-sm transition-colors flex items-center justify-center gap-2 min-h-[48px]"
             >
-              <span>Submit Fleet Application</span>
+              <span>{isLoading ? "Submitting Application..." : "Submit Fleet Application"}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>

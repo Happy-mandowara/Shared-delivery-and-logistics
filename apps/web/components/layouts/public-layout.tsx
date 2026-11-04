@@ -279,19 +279,25 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
             {/* Col 4: Platform & Support */}
             <div className="space-y-3">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-300">Company</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-300">Support & Legal</h3>
               <ul className="space-y-2 text-sm text-neutral-400">
                 <li><Link href="/how-it-works" className="hover:text-white transition-colors">How Shared Delivery Works</Link></li>
-                <li><Link href="/about" className="hover:text-white transition-colors">About NationX Project 03</Link></li>
-                <li><Link href="/contact" className="hover:text-white transition-colors">Dispatch Helpline & Support</Link></li>
-                <li><Link href="/login" className="hover:text-white transition-colors">Demo Role Switcher</Link></li>
+                <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/contact" className="hover:text-white transition-colors">Customer Help & Support</Link></li>
               </ul>
             </div>
           </div>
 
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
-            <p>© {new Date().getFullYear()} NationX Technologies. Project 03 Shared Logistics Engine. All rights reserved.</p>
-            <p className="font-mono">Supabase SQL-First Architecture • Next.js 15.5 App Router</p>
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-400 border-t border-neutral-800">
+            <p>© {new Date().getFullYear()} NationX Technologies Inc. All rights reserved.</p>
+            <div className="flex items-center gap-4 text-xs">
+              <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+              <span>·</span>
+              <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+              <span>·</span>
+              <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
+            </div>
           </div>
         </div>
       </footer>

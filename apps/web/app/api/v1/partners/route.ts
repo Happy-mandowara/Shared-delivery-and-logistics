@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
            dp.availability as status,
            dp.capacity_units as max_capacity_units,
            dp.current_locality,
+           dp.verified,
            dp.created_at,
            (
              SELECT json_build_object(

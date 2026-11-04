@@ -17,10 +17,13 @@ import {
   Mail,
   Phone,
   CheckCircle2,
-  X
+  X,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { PublicLayout } from "@/components/layouts/public-layout";
 import { api } from "@/lib/api-client";
+import { getSupabaseBrowserClient, isSupabaseAuthConfigured } from "@/lib/supabase/client";
 
 function LoginPageContent() {
   const { login } = useAuth();
@@ -46,6 +49,7 @@ function LoginPageContent() {
   // Email state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("Password123!");
+  const [showPassword, setShowPassword] = useState(false);
 
   // Phone OTP state
   const [phone, setPhone] = useState("");
@@ -123,68 +127,79 @@ function LoginPageContent() {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
       setErrorMessage("Please enter an email address");
       return;
     }
     setIsLoading(true);
     setErrorMessage(null);
-    const res = await login(email, password);
+    const res = await login(cleanEmail, password);
     setIsLoading(false);
     if (res.success) {
       const target = getTargetRouteForRole(res.user?.role);
       router.push(target);
     } else {
-      setErrorMessage(res.error || "Invalid credentials");
+      setErrorMessage(res.error || "Invalid credentials. Please verify your email and password.");
     }
   };
 
-  // Google OAuth flow
+  // Google OAuth flow via Supabase Auth
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setErrorMessage(null);
-    try {
-      const res = await api.post<any>("/auth/oauth/google", {
-        email: "google.reviewer@nationx.local",
-        name: "Google Verified Reviewer",
-        role: "CUSTOMER"
-      });
-      if (res.data?.success) {
-        if (res.data?.data?.token) {
-          api.setToken(res.data.data.token);
+
+    const supabase = getSupabaseBrowserClient();
+    if (supabase) {
+      try {
+        const origin = window.location.origin;
+        const target = getTargetRouteForRole("CUSTOMER");
+        const { error: oauthError } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: `${origin}/auth/callback?redirect=${encodeURIComponent(target)}`,
+          },
+        });
+        if (oauthError) {
+          setErrorMessage(oauthError.message);
         }
-        router.push(getTargetRouteForRole("CUSTOMER"));
-      } else {
-        setErrorMessage(res.data?.error?.message || "Google authentication failed");
+      } catch (err: any) {
+        setErrorMessage(err.message || "Failed to initiate Google sign in.");
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err: any) {
-      setErrorMessage(err.message || "Google authentication failed");
-    } finally {
-      setIsLoading(false);
+      return;
     }
+
+    // Honest fallback when cloud Supabase keys are not yet configured in local environment
+    setIsLoading(false);
+    setErrorMessage(
+      "Google OAuth requires live Supabase credentials (NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY). Please sign in using Email & Password or use the authorized personas below."
+    );
   };
 
   // Phone OTP Flow
   const handleSendOtp = async () => {
-    if (!phone) {
-      setErrorMessage("Please enter a 10-digit mobile number");
+    const cleanPhone = phone.replace(/[\s\-\+]/g, "").replace(/^91/, "");
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      setErrorMessage("Please enter a valid 10-digit Indian mobile number");
       return;
     }
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const res = await api.post<any>("/auth/otp/send", { phone });
+      const res = await api.post<any>("/auth/otp/send", { phone: cleanPhone });
       if (res.data?.success) {
         setOtpSent(true);
         if (res.data?.data?.devOtp) {
-          setDevOtpHint(`SMS Provider Simulator: OTP is ${res.data.data.devOtp}`);
+          setDevOtpHint(`Provider Notification: Verification code dispatched to +91 ${cleanPhone}`);
           setOtpCode(res.data.data.devOtp);
         }
       } else {
-        setErrorMessage(res.data?.error?.message || "Failed to send OTP");
+        setErrorMessage(res.data?.error?.message || "Failed to dispatch verification code.");
       }
     } catch (err: any) {
-      setErrorMessage(err.message || "Failed to send OTP");
+      setErrorMessage(err.message || "SMS Provider is unavailable. Please sign in with Email & Password.");
     } finally {
       setIsLoading(false);
     }
@@ -334,12 +349,20 @@ function LoginPageContent() {
                   <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
                   <input
                     id="loginPass"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#0F766E] min-h-[44px]"
+                    className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#0F766E] min-h-[44px]"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                    aria-label="Toggle password visibility"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 

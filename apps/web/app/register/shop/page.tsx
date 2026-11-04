@@ -28,6 +28,7 @@ import {
 import { PublicLayout } from "@/components/layouts/public-layout";
 import { api } from "@/lib/api-client";
 import { ImageUploader } from "@/components/ui/image-uploader";
+import { LocationPickerMap } from "@/components/ui/location-picker-map";
 
 const ONBOARDING_STEPS = [
   { step: 1, title: "Basic Info", icon: Store, desc: "Outlet & contact details" },
@@ -587,6 +588,28 @@ export default function RegisterShopPage() {
                         className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 bg-neutral-50 text-xs font-mono text-neutral-600 min-h-[44px]"
                       />
                     </div>
+                  </div>
+
+                  {/* Interactive Map Picker */}
+                  <div className="space-y-2 pt-2 border-t border-neutral-100">
+                    <label className="text-xs font-bold text-neutral-900 block">
+                      Pinpoint Exact Storefront Location on Map
+                    </label>
+                    <p className="text-3xs text-neutral-500">
+                      Drag the marker to your store entrance or click anywhere within the Khammam pilot zone. Riders navigate directly to this coordinate for order pickups.
+                    </p>
+                    <LocationPickerMap
+                      initialLat={formData.latitude}
+                      initialLng={formData.longitude}
+                      onLocationSelect={(lat, lng, hint) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          latitude: Number(lat.toFixed(6)),
+                          longitude: Number(lng.toFixed(6)),
+                          ...(hint && !prev.landmark ? { landmark: hint } : {}),
+                        }));
+                      }}
+                    />
                   </div>
                 </div>
               )}

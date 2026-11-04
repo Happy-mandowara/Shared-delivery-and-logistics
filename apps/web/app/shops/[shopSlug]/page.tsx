@@ -26,6 +26,7 @@ import { api } from "@/lib/api-client";
 import { useCart } from "@/components/cart-context";
 import { ProductCardSkeleton } from "@/components/ui/skeleton";
 import { ProductGalleryModal } from "@/components/ui/product-gallery-modal";
+import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 
 export default function ShopStorefrontPage() {
   const params = useParams();
@@ -59,6 +60,36 @@ export default function ShopStorefrontPage() {
     },
     enabled: Boolean(shopId),
   });
+
+  // Fetch customer wishlist items for heart state
+  const { data: wishlistData, refetch: refetchWishlist } = useQuery({
+    queryKey: ["customer-wishlist-items"],
+    queryFn: async () => {
+      try {
+        const res = await api.get<any>("/customer/wishlist");
+        return res.data?.wishlist || [];
+      } catch {
+        return [];
+      }
+    },
+  });
+
+  const wishlistedIds = new Set((wishlistData || []).map((w: any) => w.id || w.productId));
+
+  const toggleWishlist = async (e: React.MouseEvent, productId: string) => {
+    e.stopPropagation();
+    const isSaved = wishlistedIds.has(productId);
+    try {
+      if (isSaved) {
+        await api.delete(`/customer/wishlist/${productId}`);
+      } else {
+        await api.post("/customer/wishlist", { productId });
+      }
+      refetchWishlist();
+    } catch {
+      // Revert if error
+    }
+  };
 
   const merchant = merchantData;
   const products = productsData?.products || [];
@@ -246,26 +277,29 @@ export default function ShopStorefrontPage() {
                         className="cursor-pointer space-y-3"
                       >
                         <div className="w-full h-40 rounded-xl bg-neutral-100 overflow-hidden relative border border-neutral-100 flex items-center justify-center">
-                          {primaryImg ? (
-                            <>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={primaryImg}
-                                alt={p.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                }}
-                              />
-                              {p.image_urls && p.image_urls.length > 1 && (
-                                <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/60 text-white text-3xs font-bold backdrop-blur-xs">
-                                  +{p.image_urls.length - 1} photos
-                                </span>
-                              )}
-                            </>
-                          ) : (
-                            <Package className="w-10 h-10 text-neutral-300" />
+                          <ImageWithFallback
+                            src={primaryImg}
+                            alt={p.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            fallbackIcon={<Package className="w-10 h-10 text-neutral-300" />}
+                          />
+                          {p.image_urls && p.image_urls.length > 1 && (
+                            <span className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-black/60 text-white text-3xs font-bold backdrop-blur-xs">
+                              +{p.image_urls.length - 1} photos
+                            </span>
                           )}
+                          <button
+                            type="button"
+                            onClick={(e) => toggleWishlist(e, p.id)}
+                            className={`absolute top-2 right-2 p-1.5 rounded-full backdrop-blur-xs transition-transform active:scale-90 z-10 ${
+                              wishlistedIds.has(p.id)
+                                ? "bg-rose-50 text-rose-600 border border-rose-200"
+                                : "bg-white/80 text-neutral-600 hover:text-rose-500"
+                            }`}
+                            title={wishlistedIds.has(p.id) ? "Remove from favourites" : "Add to favourites"}
+                          >
+                            <Heart className={`w-4 h-4 ${wishlistedIds.has(p.id) ? "fill-rose-500 text-rose-500" : ""}`} />
+                          </button>
                         </div>
 
                         <div>
