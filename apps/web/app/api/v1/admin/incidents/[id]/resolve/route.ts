@@ -41,3 +41,4 @@ export async function POST(
     return apiError(err.message, "RESOLVE_INCIDENT_ERROR", 500);
   }
 }
+

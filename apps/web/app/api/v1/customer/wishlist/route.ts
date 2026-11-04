@@ -75,3 +75,4 @@ export async function POST(req: NextRequest) {
     return apiError("DATABASE_ERROR", err.message || "Failed to add to wishlist", 500);
   }
 }
+

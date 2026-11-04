@@ -603,12 +603,16 @@ export default function RegisterShopPage() {
                     </p>
                     <ImageUploader
                       value={formData.galleryUrls}
-                      onChange={(urls) => setFormData({ 
-                        ...formData, 
-                        galleryUrls: urls,
-                        coverUrl: urls[0] || "",
-                        logoUrl: urls[1] || urls[0] || ""
-                      })}
+                      onChange={(urls) => {
+                        const urlList = Array.isArray(urls) ? urls : [urls];
+                        setFormData({ 
+                          ...formData, 
+                          galleryUrls: urlList,
+                          coverUrl: urlList[0] || "",
+                          logoUrl: urlList[1] || urlList[0] || ""
+                        });
+                      }}
+                      multiple
                       maxImages={6}
                     />
                   </div>

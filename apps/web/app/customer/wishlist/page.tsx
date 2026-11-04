@@ -107,11 +107,11 @@ export default function CustomerWishlistPage() {
                 <button
                   onClick={() => {
                     addItem({
-                      id: item.id,
+                      productId: item.productId || item.id,
                       name: item.name,
                       price: Number(item.price),
-                      shopId: item.merchantId,
-                      shopName: item.merchantName || "Local Merchant",
+                      merchantId: item.merchantId,
+                      merchantName: item.merchantName || "Local Merchant",
                       imageUrl: item.imageUrl,
                       quantity: 1,
                       handlingTag: item.handlingTag,

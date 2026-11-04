@@ -24,3 +24,4 @@ export async function POST(req: NextRequest) {
     return apiError(err.message, "PASSWORD_CONFIRM_ERROR", 500);
   }
 }
+

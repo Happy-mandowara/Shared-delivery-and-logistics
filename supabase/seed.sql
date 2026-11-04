@@ -13,6 +13,11 @@ INSERT INTO auth.users (id, email) VALUES
   ('b0000000-0000-0000-0000-000000000001', 'bawarchi@nationx.local'),
   ('b0000000-0000-0000-0000-000000000002', 'balaji@nationx.local'),
   ('b0000000-0000-0000-0000-000000000003', 'krishna@nationx.local'),
+  ('b0000000-0000-0000-0000-000000000004', 'laxmi@nationx.local'),
+  ('b0000000-0000-0000-0000-000000000005', 'kakatiya@nationx.local'),
+  ('b0000000-0000-0000-0000-000000000006', 'venkatdairy@nationx.local'),
+  ('b0000000-0000-0000-0000-000000000007', 'annapurna@nationx.local'),
+  ('b0000000-0000-0000-0000-000000000008', 'telanganasweets@nationx.local'),
   ('c0000000-0000-0000-0000-000000000001', 'partner1@nationx.local'),
   ('c0000000-0000-0000-0000-000000000002', 'partner2@nationx.local'),
   ('d0000000-0000-0000-0000-000000000001', 'customer1@nationx.local'),
@@ -25,17 +30,27 @@ INSERT INTO public.users (id, name, email, phone, role) VALUES
   ('b0000000-0000-0000-0000-000000000001', 'Bawarchi Biryani Manager', 'bawarchi@nationx.local', '+919800000002', 'MERCHANT'),
   ('b0000000-0000-0000-0000-000000000002', 'Balaji Kirana Owner', 'balaji@nationx.local', '+919800000003', 'MERCHANT'),
   ('b0000000-0000-0000-0000-000000000003', 'Sri Krishna Sweets Manager', 'krishna@nationx.local', '+919800000004', 'MERCHANT'),
+  ('b0000000-0000-0000-0000-000000000004', 'Sri Laxmi Provisions Owner', 'laxmi@nationx.local', '+919800000010', 'MERCHANT'),
+  ('b0000000-0000-0000-0000-000000000005', 'Kakatiya Kitchen Manager', 'kakatiya@nationx.local', '+919800000011', 'MERCHANT'),
+  ('b0000000-0000-0000-0000-000000000006', 'Venkateshwara Dairy Lead', 'venkatdairy@nationx.local', '+919800000012', 'MERCHANT'),
+  ('b0000000-0000-0000-0000-000000000007', 'Annapurna Super Bazaar Manager', 'annapurna@nationx.local', '+919800000013', 'MERCHANT'),
+  ('b0000000-0000-0000-0000-000000000008', 'Telangana Sweet House Owner', 'telanganasweets@nationx.local', '+919800000014', 'MERCHANT'),
   ('c0000000-0000-0000-0000-000000000001', 'Suresh Rider (2-Wheeler)', 'partner1@nationx.local', '+919800000005', 'PARTNER'),
   ('c0000000-0000-0000-0000-000000000002', 'Ramesh Rider (Offline)', 'partner2@nationx.local', '+919800000006', 'PARTNER'),
   ('d0000000-0000-0000-0000-000000000001', 'Rajesh K. (Customer 1)', 'customer1@nationx.local', '+919800000007', 'CUSTOMER'),
   ('d0000000-0000-0000-0000-000000000002', 'Priya M. (Customer 2)', 'customer2@nationx.local', '+919800000008', 'CUSTOMER'),
   ('d0000000-0000-0000-0000-000000000003', 'Venkat S. (Customer 3)', 'customer3@nationx.local', '+919800000009', 'CUSTOMER');
 
--- 3. Seed Merchants (3 shops in Khammam)
-INSERT INTO public.merchants (id, user_id, name, code, address, locality, latitude, longitude) VALUES
-  ('10000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', 'Bawarchi Biryani', 'MERCH_BAWARCHI', 'Wyra Road, Near RTC Bus Stand', 'Khammam Central', 17.2472, 80.1514),
-  ('10000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000002', 'Balaji Kirana & General Store', 'MERCH_BALAJI', 'Shop #4, Mayuri Centre', 'Khammam Central', 17.2490, 80.1530),
-  ('10000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000003', 'Sri Krishna Sweets & Bakery', 'MERCH_KRISHNA', 'Opp. Gandhi Park, Station Road', 'Khammam Central', 17.2510, 80.1545);
+-- 3. Seed Merchants (8 diverse shops in Khammam)
+INSERT INTO public.merchants (id, user_id, name, code, category, address, locality, latitude, longitude, is_approved, is_active, rating) VALUES
+  ('10000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', 'Bawarchi Biryani', 'MERCH_BAWARCHI', 'Restaurants', 'Wyra Road, Near RTC Bus Stand', 'Khammam Central', 17.2472, 80.1514, true, true, 4.8),
+  ('10000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000002', 'Balaji Kirana & General Store', 'MERCH_BALAJI', 'Groceries & Staples', 'Shop #4, Mayuri Centre', 'Khammam Central', 17.2490, 80.1530, true, true, 4.7),
+  ('10000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000003', 'Sri Krishna Sweets & Bakery', 'MERCH_KRISHNA', 'Sweets & Bakery', 'Opp. Gandhi Park, Station Road', 'Khammam Central', 17.2510, 80.1545, true, true, 4.9),
+  ('10000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000004', 'Sri Laxmi Provision Stores', 'MERCH_LAXMI', 'Groceries & Staples', 'Door 4-2-118, Mayuri Centre', 'Mayuri Centre', 17.2512, 80.1489, true, true, 4.8),
+  ('10000000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000005', 'Kakatiya Spicy Kitchen', 'MERCH_KAKATIYA', 'Restaurants', 'Shop 12, Wyra Road', 'Wyra Road', 17.2435, 80.1555, true, true, 4.6),
+  ('10000000-0000-0000-0000-000000000006', 'b0000000-0000-0000-0000-000000000006', 'Venkateshwara Dairy Farm', 'MERCH_VENKAT', 'Dairy & Eggs', 'Station Road, Gandhi Chowk', 'Gandhi Chowk', 17.2470, 80.1520, true, true, 4.9),
+  ('10000000-0000-0000-0000-000000000007', 'b0000000-0000-0000-0000-000000000007', 'Annapurna Super Bazaar', 'MERCH_ANNAPURNA', 'Groceries & Daily Essentials', 'Opposite RTC Bus Stand', 'Bus Stand Road', 17.2490, 80.1500, true, true, 4.7),
+  ('10000000-0000-0000-0000-000000000008', 'b0000000-0000-0000-0000-000000000008', 'Telangana Sweet House', 'MERCH_TELANGANA', 'Sweets & Bakery', 'Near Clock Tower, Trunk Road', 'Trunk Road', 17.2465, 80.1540, true, true, 4.8);
 
 -- 4. Seed Delivery Partners
 INSERT INTO public.delivery_partners (id, user_id, vehicle_type, capacity_units, availability, current_locality, latitude, longitude, verified) VALUES
@@ -94,7 +109,12 @@ INSERT INTO public.products (
   ('50000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000003', 'Premium Silver Leaf Kaju Katli (250g)', 'Melt-in-mouth diamond cuts made with premium Goan cashews and pure desi ghee.', 'Traditional Sweets', 160.00, '/images/products/kaju-katli.jpg', 'PERISHABLE', 'IN_STOCK', timezone('utc'::text, now()), true),
   ('50000000-0000-0000-0000-000000000010', '10000000-0000-0000-0000-000000000003', 'Pure Ghee Motichoor Laddu (250g Box)', 'Fine besan pearls fried in pure ghee, flavored with saffron and cardamom.', 'Traditional Sweets', 110.00, '/images/products/motichoor-laddu.jpg', 'PERISHABLE', 'IN_STOCK', timezone('utc'::text, now()), true),
   ('50000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-000000000003', 'Special Soft Gulab Jamun (6 Pieces)', 'Traditional khoya dumplings soaked in fragrant rose and green cardamom syrup.', 'Traditional Sweets', 120.00, '/images/products/gulab-jamun.jpg', 'FRAGILE', 'IN_STOCK', timezone('utc'::text, now()), true),
-  ('50000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-000000000003', 'Bakery Fresh Butter Cookies (200g Pack)', 'Crisp crumbly butter biscuits baked fresh daily at the Station Road bakery.', 'Bakery & Snacks', 95.00, '/images/products/butter-cookies.jpg', 'FRAGILE', 'IN_STOCK', timezone('utc'::text, now()), true)
+  ('50000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-000000000003', 'Bakery Fresh Butter Cookies (200g Pack)', 'Crisp crumbly butter biscuits baked fresh daily at the Station Road bakery.', 'Bakery & Snacks', 95.00, '/images/products/butter-cookies.jpg', 'FRAGILE', 'IN_STOCK', timezone('utc'::text, now()), true),
+  ('50000000-0000-0000-0000-000000000013', '10000000-0000-0000-0000-000000000004', 'Organic Telangana Red Gram (1 kg)', 'Farm-fresh unpolished pigeon peas grown by local Khammam farmers.', 'Groceries & Staples', 175.00, '/images/products/toor-dal.jpg', 'STANDARD', 'IN_STOCK', timezone('utc'::text, now()), true),
+  ('50000000-0000-0000-0000-000000000014', '10000000-0000-0000-0000-000000000005', 'Rayalaseema Mutton Fry (Single Portion)', 'Fiery boneless mutton roasted with crushed pepper, curry leaves, and local masala.', 'Restaurants', 340.00, '/images/products/chicken-65.jpg', 'HOT_FOOD', 'IN_STOCK', timezone('utc'::text, now()), true),
+  ('50000000-0000-0000-0000-000000000015', '10000000-0000-0000-0000-000000000006', 'Pure Farm Buffalo Milk (1 Litre Glass Bottle)', 'Chilled unadulterated whole milk delivered within 3 hours of morning milking.', 'Dairy & Eggs', 75.00, '/images/products/sunflower-oil.jpg', 'PERISHABLE', 'IN_STOCK', timezone('utc'::text, now()), true),
+  ('50000000-0000-0000-0000-000000000016', '10000000-0000-0000-0000-000000000007', 'Super Bazaar Daily Pantry Combo Pack', 'Essential tea powder (250g), sugar (1kg), and salt (1kg) bundle.', 'Groceries & Daily Essentials', 199.00, '/images/products/atta-5kg.jpg', 'STANDARD', 'IN_STOCK', timezone('utc'::text, now()), true),
+  ('50000000-0000-0000-0000-000000000017', '10000000-0000-0000-0000-000000000008', 'Telangana Putharekulu Roll (6 Pieces)', 'Traditional wafer-thin rice paper sheets stuffed with powdered jaggery and pure ghee.', 'Sweets & Bakery', 180.00, '/images/products/kaju-katli.jpg', 'FRAGILE', 'IN_STOCK', timezone('utc'::text, now()), true)
 ON CONFLICT (id) DO UPDATE SET
   price = EXCLUDED.price,
   stock_status = EXCLUDED.stock_status,

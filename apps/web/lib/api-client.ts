@@ -26,10 +26,12 @@ class ApiClient {
     if (typeof window !== "undefined") {
       if (token) {
         localStorage.setItem("nationx_token", token);
+        document.cookie = `sb-access-token=${token}; path=/; max-age=604800; SameSite=Lax`;
         document.cookie = `session=${token}; path=/; max-age=604800; SameSite=Lax`;
       } else {
         localStorage.removeItem("nationx_token");
-        document.cookie = "session=; path=/; max-age=0";
+        document.cookie = "sb-access-token=; path=/; max-age=0; SameSite=Lax";
+        document.cookie = "session=; path=/; max-age=0; SameSite=Lax";
       }
     }
   }

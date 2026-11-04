@@ -105,8 +105,19 @@ export default function ShopStorefrontPage() {
           <div className="p-6 sm:p-8 rounded-3xl bg-white border border-neutral-200 shadow-2xs space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
               <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-teal-50 border border-teal-200 text-[#0F766E] flex items-center justify-center font-bold text-2xl shrink-0">
-                  <Store className="w-8 h-8" />
+                <div className="w-16 h-16 rounded-2xl bg-teal-50 border border-teal-200 text-[#0F766E] overflow-hidden flex items-center justify-center font-bold text-2xl shrink-0">
+                  {merchant.logoUrl ? (
+                    <img
+                      src={merchant.logoUrl}
+                      alt={merchant.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <Store className="w-8 h-8" />
+                  )}
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -234,21 +245,28 @@ export default function ShopStorefrontPage() {
                         onClick={() => setSelectedProductForModal(p)}
                         className="cursor-pointer space-y-3"
                       >
-                        {primaryImg && (
-                          <div className="w-full h-40 rounded-xl bg-neutral-100 overflow-hidden relative border border-neutral-100">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={primaryImg}
-                              alt={p.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                            {p.image_urls && p.image_urls.length > 1 && (
-                              <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/60 text-white text-3xs font-bold backdrop-blur-xs">
-                                +{p.image_urls.length - 1} photos
-                              </span>
-                            )}
-                          </div>
-                        )}
+                        <div className="w-full h-40 rounded-xl bg-neutral-100 overflow-hidden relative border border-neutral-100 flex items-center justify-center">
+                          {primaryImg ? (
+                            <>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={primaryImg}
+                                alt={p.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
+                              />
+                              {p.image_urls && p.image_urls.length > 1 && (
+                                <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/60 text-white text-3xs font-bold backdrop-blur-xs">
+                                  +{p.image_urls.length - 1} photos
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <Package className="w-10 h-10 text-neutral-300" />
+                          )}
+                        </div>
 
                         <div>
                           <h3 className="text-base font-bold text-neutral-900 leading-snug group-hover:text-[#0F766E] transition-colors">

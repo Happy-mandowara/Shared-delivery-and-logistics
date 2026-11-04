@@ -113,7 +113,8 @@ export default function MerchantCreateProductPage() {
             </p>
             <ImageUploader
               value={imageUrls}
-              onChange={setImageUrls}
+              onChange={(urls) => setImageUrls(Array.isArray(urls) ? urls : [urls])}
+              multiple
               maxImages={6}
             />
           </div>

@@ -161,7 +161,8 @@ export default function CustomerComplaintPage() {
               </p>
               <ImageUploader
                 value={photoUrls}
-                onChange={setPhotoUrls}
+                onChange={(urls) => setPhotoUrls(Array.isArray(urls) ? urls : [urls])}
+                multiple
                 maxImages={4}
               />
             </div>
@@ -209,3 +210,4 @@ export default function CustomerComplaintPage() {
     </div>
   );
 }
+

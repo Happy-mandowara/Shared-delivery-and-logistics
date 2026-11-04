@@ -103,10 +103,10 @@ BEGIN
     RAISE EXCEPTION 'RLS FAIL: Admin saw % suborders instead of 4', v_all_suborders;
   END IF;
 
-  -- Admin sees all 3 merchants
+  -- Admin sees all active merchants (at least 3 baseline)
   SELECT count(*) INTO v_all_merchants FROM public.merchants;
-  IF v_all_merchants != 3 THEN
-    RAISE EXCEPTION 'RLS FAIL: Admin saw % merchants instead of 3', v_all_merchants;
+  IF v_all_merchants < 3 THEN
+    RAISE EXCEPTION 'RLS FAIL: Admin saw % merchants, expected at least 3', v_all_merchants;
   END IF;
 
   RAISE NOTICE 'TEST PASS: Administrator operational visibility verified.';

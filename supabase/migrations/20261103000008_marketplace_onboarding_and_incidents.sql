@@ -227,3 +227,4 @@ CREATE POLICY incidents_update ON public.incident_reports
 DROP POLICY IF EXISTS otp_admin ON public.otp_verifications;
 CREATE POLICY otp_admin ON public.otp_verifications
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+

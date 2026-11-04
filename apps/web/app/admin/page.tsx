@@ -62,38 +62,50 @@ export default function AdminCommandCenterPage() {
   const activeBatches = batches.filter((b: any) => ["ASSIGNED", "IN_TRANSIT"].includes(b.status));
   const completedBatches = batches.filter((b: any) => b.status === "COMPLETED");
 
-  const sampleMapStops = [
-    {
-      id: "shop-1",
-      name: "Bawarchi Biryani Central",
-      address: "Wyra Road, Beside Clock Tower, Khammam",
-      lat: 17.2472,
-      lng: 80.1514,
-      type: "PICKUP" as const,
-      status: "COMPLETED" as const,
-      locality: "Wyra Road"
-    },
-    {
-      id: "shop-2",
-      name: "Sri Balaji Supermarket",
-      address: "Near Bus Station Road, Khammam",
-      lat: 17.251,
-      lng: 80.158,
-      type: "PICKUP" as const,
-      status: "COMPLETED" as const,
-      locality: "Bus Stand Road"
-    },
-    {
-      id: "drop-1",
-      name: "Customer Drop-off (Mamata Hospital)",
-      address: "Mamata General Hospital Quarters, Khammam",
-      lat: 17.2589,
-      lng: 80.1422,
-      type: "DROPOFF" as const,
-      status: "PENDING" as const,
-      locality: "Mamata Hospital"
-    }
-  ];
+  const liveMapStops =
+    activeBatches.length > 0 && Array.isArray(activeBatches[0].stops) && activeBatches[0].stops.length > 0
+      ? activeBatches[0].stops.map((s: any, idx: number) => ({
+          id: s.id,
+          name: s.locationName || (s.stopType === "PICKUP" ? "Shop Handover" : "Customer Drop-off"),
+          address: s.address || "Khammam Sector",
+          lat: Number(s.latitude) || 17.2472,
+          lng: Number(s.longitude) || 80.1514,
+          type: (s.stopType === "PICKUP" ? "PICKUP" : "DROPOFF") as "PICKUP" | "DROPOFF",
+          status: s.status,
+          sequence: s.sequenceNumber || idx + 1,
+        }))
+      : [
+          {
+            id: "shop-1",
+            name: "Bawarchi Biryani Central",
+            address: "Wyra Road, Beside Clock Tower, Khammam",
+            lat: 17.2472,
+            lng: 80.1514,
+            type: "PICKUP" as const,
+            status: "COMPLETED" as const,
+            locality: "Wyra Road",
+          },
+          {
+            id: "shop-2",
+            name: "Sri Balaji Supermarket",
+            address: "Near Bus Station Road, Khammam",
+            lat: 17.251,
+            lng: 80.158,
+            type: "PICKUP" as const,
+            status: "COMPLETED" as const,
+            locality: "Bus Stand Road",
+          },
+          {
+            id: "drop-1",
+            name: "Customer Drop-off (Mamata Hospital)",
+            address: "Mamata General Hospital Quarters, Khammam",
+            lat: 17.2589,
+            lng: 80.1422,
+            type: "DROPOFF" as const,
+            status: "PENDING" as const,
+            locality: "Mamata Hospital",
+          },
+        ];
 
   return (
     <div className="space-y-8">
@@ -236,7 +248,7 @@ export default function AdminCommandCenterPage() {
               </span>
             </div>
 
-            <RouteMap stops={sampleMapStops} batchId="KHM-CMD-CTR" status="ACTIVE" className="h-64 rounded-2xl" />
+            <RouteMap stops={liveMapStops} batchId="KHM-CMD-CTR" status="ACTIVE" className="h-64 rounded-2xl" />
 
             <div className="pt-2 text-3xs text-neutral-500 flex items-center justify-between">
               <span>Wyra Road & Mamata Hospital Corridors</span>

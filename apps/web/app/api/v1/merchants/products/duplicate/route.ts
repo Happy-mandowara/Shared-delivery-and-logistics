@@ -100,3 +100,4 @@ export async function POST(req: NextRequest) {
     return apiError("DUPLICATION_FAILED", err.message || "Failed to duplicate product", 500);
   }
 }
+

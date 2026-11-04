@@ -38,3 +38,4 @@ export async function POST(req: NextRequest) {
     return apiError(err.message, "PASSWORD_RESET_ERROR", 500);
   }
 }
+

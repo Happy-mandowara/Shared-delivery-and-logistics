@@ -26,3 +26,4 @@ export async function DELETE(
     return apiError("DATABASE_ERROR", err.message || "Failed to remove from wishlist", 500);
   }
 }
+

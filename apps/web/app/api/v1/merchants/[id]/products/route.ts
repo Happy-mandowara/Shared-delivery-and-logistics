@@ -17,6 +17,12 @@ export async function GET(
   const offset = (page - 1) * limit;
 
   try {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    let merchantMatch = "p.merchant_id = $1";
+    if (!isUuid) {
+      merchantMatch = "p.merchant_id = (SELECT id FROM public.merchants WHERE code = $1 OR LOWER(code) = LOWER($1) OR LOWER(REPLACE(name, ' ', '-')) = LOWER($1) LIMIT 1)";
+    }
+
     let query = `
       SELECT 
         p.id,
@@ -28,6 +34,7 @@ export async function GET(
         p.category,
         p.price,
         p.image_url AS "imageUrl",
+        p.image_urls AS "imageUrls",
         p.handling_tag AS "handlingTag",
         CASE 
           WHEN p.stock_status = 'OUT_OF_STOCK' THEN 'OUT_OF_STOCK'
@@ -40,7 +47,7 @@ export async function GET(
         p.updated_at AS "updatedAt"
       FROM public.products p
       JOIN public.merchants m ON p.merchant_id = m.id
-      WHERE p.merchant_id = $1 AND p.is_active = true
+      WHERE ${merchantMatch} AND p.is_active = true
     `;
 
     const queryParams: any[] = [id];

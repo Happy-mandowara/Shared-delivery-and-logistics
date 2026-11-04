@@ -107,3 +107,4 @@ export async function POST(req: NextRequest) {
     return apiError(err.message, "UPDATE_LOCATION_ERROR", 500);
   }
 }
+

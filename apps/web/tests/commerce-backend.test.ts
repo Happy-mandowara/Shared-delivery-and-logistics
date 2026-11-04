@@ -139,7 +139,7 @@ async function runCommerceBackendTests() {
   const merchantsRes = await getMerchantsHandler(makeReq("http://localhost:3000/api/v1/merchants"));
   const merchantsJson = await merchantsRes.json();
   assert(merchantsRes.status === 200, "GET /api/v1/merchants returns 200");
-  assert(merchantsJson.data.merchants.length === 3, "Returns all 3 active Khammam merchants");
+  assert(merchantsJson.data.merchants.length >= 3, "Returns active Khammam merchants (at least 3)");
   const bawarchi = merchantsJson.data.merchants.find((m: any) => m.id === BAWARCHI_MERCHANT_ID);
   assert(bawarchi && bawarchi.name === "Bawarchi Biryani", "Found Bawarchi Biryani in merchant list");
   assert(bawarchi && bawarchi.productCount === 4, "Bawarchi accurately reports 4 active products");

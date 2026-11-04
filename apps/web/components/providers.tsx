@@ -20,7 +20,7 @@ interface AuthContextType {
   role: UserRole | null;
   isLoading: boolean;
   isDemoMode: boolean;
-  login: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password?: string) => Promise<{ success: boolean; user?: any; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -43,8 +43,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 5000,
-            refetchOnWindowFocus: true,
+            staleTime: 60 * 1000, // 1 minute cache
+            gcTime: 5 * 60 * 1000,
+            refetchOnWindowFocus: false, // Prevent aggressive network refetches on focus
+            retry: 1,
           },
         },
       })
@@ -89,7 +91,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         });
         queryClient.clear();
         setIsLoading(false);
-        return { success: true };
+        return { success: true, user: u };
       } else {
         setIsLoading(false);
         return { success: false, error: res.error?.message || "Invalid credentials" };

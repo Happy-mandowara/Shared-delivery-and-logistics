@@ -9,6 +9,14 @@ import crypto from "crypto";
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif"];
 
+function getUploadsDir(): string {
+  const cwd = process.cwd();
+  if (cwd.endsWith(path.join("apps", "web")) || cwd.endsWith("apps/web")) {
+    return path.join(cwd, "public", "uploads");
+  }
+  return path.join(cwd, "apps", "web", "public", "uploads");
+}
+
 /**
  * POST /api/v1/upload
  * Handles authenticated image uploads (storefronts, products, verification docs).
@@ -79,7 +87,7 @@ export async function POST(req: NextRequest) {
 
     const uniqueId = crypto.randomUUID();
     const fileName = `${uniqueId}.${extension}`;
-    const uploadsDir = path.join(process.cwd(), "apps", "web", "public", "uploads");
+    const uploadsDir = getUploadsDir();
 
     // Ensure uploads directory exists
     await fs.mkdir(uploadsDir, { recursive: true });

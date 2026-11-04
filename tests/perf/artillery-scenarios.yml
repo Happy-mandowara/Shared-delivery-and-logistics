@@ -39,3 +39,4 @@ scenarios:
           url: "/batches?status=IN_TRANSIT"
       - get:
           url: "/merchants"
+

@@ -11,6 +11,12 @@ export async function GET(
   const { id } = await params;
 
   try {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    let condition = "m.id = $1";
+    if (!isUuid) {
+      condition = "(m.code = $1 OR LOWER(m.code) = LOWER($1) OR LOWER(REPLACE(m.name, ' ', '-')) = LOWER($1))";
+    }
+
     const res = await pool.query(
       `SELECT 
          m.id,
@@ -36,7 +42,7 @@ export async function GET(
            WHERE p.merchant_id = m.id AND p.is_active = true AND (p.is_archived IS FALSE OR p.is_archived IS NULL)
          ) AS "productCount"
        FROM public.merchants m
-       WHERE m.id = $1`,
+       WHERE ${condition}`,
       [id]
     );
 

@@ -47,6 +47,8 @@ export interface ProductModalData {
 interface ProductGalleryModalProps {
   product: ProductModalData | null;
   onClose: () => void;
+  isOpen?: boolean;
+  merchantName?: string;
   isWishlisted?: boolean;
   onWishlistToggle?: (productId: string, nextState: boolean) => void;
 }
@@ -54,6 +56,8 @@ interface ProductGalleryModalProps {
 export function ProductGalleryModal({
   product,
   onClose,
+  isOpen = true,
+  merchantName,
   isWishlisted = false,
   onWishlistToggle,
 }: ProductGalleryModalProps) {
@@ -64,7 +68,7 @@ export function ProductGalleryModal({
   const [wishlistState, setWishlistState] = useState(isWishlisted);
   const [addedAnimation, setAddedAnimation] = useState(false);
 
-  if (!product) return null;
+  if (!product || isOpen === false) return null;
 
   const images = product.imageUrls && product.imageUrls.length > 0 
     ? product.imageUrls 
@@ -76,11 +80,12 @@ export function ProductGalleryModal({
 
   const handleAddToCart = () => {
     addItem({
-      id: product.id,
+      productId: product.id,
       name: selectedVariant ? `${product.name} (${selectedVariant.name})` : product.name,
       price: currentPrice,
-      shopId: product.merchantId,
-      shopName: product.merchantName || "Local Merchant",
+      merchantId: product.merchantId,
+      merchantName: merchantName || product.merchantName || "Local Merchant",
+      merchantLocality: product.merchantLocality,
       imageUrl: images[0],
       quantity: quantity,
       handlingTag: product.handlingTag,
@@ -308,3 +313,4 @@ export function ProductGalleryModal({
     </div>
   );
 }
+

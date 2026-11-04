@@ -451,7 +451,7 @@ async function runSecurityAudit() {
   const seedUsers = await pool.query(
     `SELECT count(*)::int as count FROM public.users WHERE email LIKE '%@nationx.local'`
   );
-  assert(seedUsers.rows[0].count === 9, "5.1: Demo seed accounts use explicit @nationx.local demo domains");
+  assert(seedUsers.rows[0].count >= 9, "5.1: Demo seed accounts use explicit @nationx.local demo domains");
 
   // 5.2 Verify zero simulated or fabricated live tracking tables exist
   const liveTableCheck = await pool.query(

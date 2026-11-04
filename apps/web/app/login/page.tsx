@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { useAuth } from "@/components/providers";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { 
   ShieldCheck, 
@@ -22,10 +22,26 @@ import {
 import { PublicLayout } from "@/components/layouts/public-layout";
 import { api } from "@/lib/api-client";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get("redirect");
   const [authMethod, setAuthMethod] = useState<"EMAIL" | "PHONE">("EMAIL");
+
+  const getTargetRouteForRole = (role?: string) => {
+    if (redirectParam && redirectParam.startsWith("/")) return redirectParam;
+    switch (role) {
+      case "ADMIN":
+        return "/admin";
+      case "MERCHANT":
+        return "/merchant";
+      case "PARTNER":
+        return "/partner";
+      default:
+        return "/customer";
+    }
+  };
 
   // Email state
   const [email, setEmail] = useState("");
@@ -116,7 +132,8 @@ export default function LoginPage() {
     const res = await login(email, password);
     setIsLoading(false);
     if (res.success) {
-      router.push("/");
+      const target = getTargetRouteForRole(res.user?.role);
+      router.push(target);
     } else {
       setErrorMessage(res.error || "Invalid credentials");
     }
@@ -133,7 +150,10 @@ export default function LoginPage() {
         role: "CUSTOMER"
       });
       if (res.data?.success) {
-        window.location.href = "/customer";
+        if (res.data?.data?.token) {
+          api.setToken(res.data.data.token);
+        }
+        router.push(getTargetRouteForRole("CUSTOMER"));
       } else {
         setErrorMessage(res.data?.error?.message || "Google authentication failed");
       }
@@ -180,7 +200,10 @@ export default function LoginPage() {
     try {
       const res = await api.post<any>("/auth/otp/verify", { phone, otpCode });
       if (res.data?.success) {
-        window.location.href = "/customer";
+        if (res.data?.data?.token) {
+          api.setToken(res.data.data.token);
+        }
+        router.push(getTargetRouteForRole(res.data?.data?.user?.role || "CUSTOMER"));
       } else {
         setErrorMessage(res.data?.error?.message || "Invalid OTP code");
       }
@@ -227,52 +250,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* 1-Click Demo Personas */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#0F766E] flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4" />
-              <span>1-Click Evaluator Personas (Khammam Seeded Roles)</span>
-            </span>
-            <span className="text-3xs text-neutral-400">Authentic GoTrue JWT Auth</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {demoPersonas.map((p) => {
-              const Icon = p.icon;
-              return (
-                <button
-                  key={p.email}
-                  type="button"
-                  onClick={() => handleDemoLogin(p.email, p.route)}
-                  disabled={isLoading}
-                  className="p-4 rounded-2xl bg-white border border-neutral-200/90 hover:border-teal-400 hover:shadow-md transition-all text-left flex flex-col justify-between group min-h-[140px]"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`text-3xs font-extrabold uppercase px-2 py-0.5 rounded ${p.badgeColor}`}>
-                        {p.role}
-                      </span>
-                      <Icon className="w-4 h-4 text-neutral-400 group-hover:text-[#0F766E] transition-colors" />
-                    </div>
-                    <span className="text-xs font-black text-neutral-900 block group-hover:text-[#0F766E] transition-colors">
-                      {p.title}
-                    </span>
-                    <p className="text-3xs text-neutral-500 mt-1 line-clamp-2 leading-relaxed">
-                      {p.desc}
-                    </p>
-                  </div>
-                  <div className="mt-3 pt-2 border-t border-neutral-100 flex items-center justify-between text-3xs font-bold text-neutral-400 group-hover:text-[#0F766E]">
-                    <span>{p.email}</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Auth Mode Box */}
+        {/* Commercial Auth Card */}
         <div className="max-w-md mx-auto p-6 sm:p-8 rounded-3xl bg-white border border-neutral-200 shadow-2xs space-y-5">
           {/* Google Sign In Button */}
           <button
@@ -458,6 +436,28 @@ export default function LoginPage() {
               Create one here
             </Link>
           </div>
+
+          {/* Pilot Verification Access */}
+          <details className="pt-2 text-3xs text-neutral-400 group border-t border-neutral-100">
+            <summary className="cursor-pointer hover:text-neutral-600 font-semibold list-none flex items-center justify-center gap-1">
+              <span>Pilot Verification Access</span>
+            </summary>
+            <div className="pt-3 space-y-1.5 text-neutral-500">
+              <div className="flex justify-between p-2 rounded-lg bg-neutral-50 border border-neutral-100">
+                <span className="font-bold text-neutral-700">Admin Ops</span>
+                <span className="font-mono">admin@nationx.local</span>
+              </div>
+              <div className="flex justify-between p-2 rounded-lg bg-neutral-50 border border-neutral-100">
+                <span className="font-bold text-neutral-700">Merchant</span>
+                <span className="font-mono">merchant1@nationx.local</span>
+              </div>
+              <div className="flex justify-between p-2 rounded-lg bg-neutral-50 border border-neutral-100">
+                <span className="font-bold text-neutral-700">Rider</span>
+                <span className="font-mono">partner1@nationx.local</span>
+              </div>
+              <p className="text-center text-[10px] text-neutral-400 pt-1">Default password: Password123!</p>
+            </div>
+          </details>
         </div>
       </div>
 
@@ -506,5 +506,19 @@ export default function LoginPage() {
         </div>
       )}
     </PublicLayout>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#F8FAFA] flex items-center justify-center p-8 text-neutral-400 text-xs font-bold">
+          Loading NationX portal...
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }

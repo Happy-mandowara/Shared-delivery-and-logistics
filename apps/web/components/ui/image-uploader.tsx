@@ -6,10 +6,11 @@ import { api } from "@/lib/api-client";
 
 interface ImageUploaderProps {
   value?: string | string[];
-  onChange: (url: string | string[]) => void;
+  onChange: (url: any) => void;
   multiple?: boolean;
   label?: string;
   maxFiles?: number;
+  maxImages?: number;
 }
 
 export function ImageUploader({
@@ -18,7 +19,9 @@ export function ImageUploader({
   multiple = false,
   label = "Upload Image",
   maxFiles = 5,
+  maxImages,
 }: ImageUploaderProps) {
+  const effectiveMax = maxImages || maxFiles;
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -83,7 +86,7 @@ export function ImageUploader({
     setIsUploading(true);
 
     const uploadedUrls: string[] = [];
-    const limit = multiple ? Math.min(files.length, maxFiles - images.length) : 1;
+    const limit = multiple ? Math.min(files.length, effectiveMax - images.length) : 1;
 
     for (let i = 0; i < limit; i++) {
       const file = files[i];
@@ -200,3 +203,4 @@ export function ImageUploader({
     </div>
   );
 }
+
