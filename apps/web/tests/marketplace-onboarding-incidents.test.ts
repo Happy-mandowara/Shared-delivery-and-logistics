@@ -157,7 +157,7 @@ async function run() {
       body: { phone: "9848022334" },
     }));
     const sendOtpJson = await sendOtpRes.json();
-    assert(sendOtpRes.status === 200 && sendOtpJson.data?.sent, "Phone OTP requested successfully", { status: sendOtpRes.status, sendOtpJson });
+    assert(sendOtpRes.status === 200 && (sendOtpJson.data?.generated || sendOtpJson.data?.sent), "Phone OTP requested successfully", { status: sendOtpRes.status, sendOtpJson });
     const otpCode = sendOtpJson.data?.devOtp || "123456";
 
     const verifyOtpRes = await verifyOtpHandler(makeReq("/api/v1/auth/otp/verify", {

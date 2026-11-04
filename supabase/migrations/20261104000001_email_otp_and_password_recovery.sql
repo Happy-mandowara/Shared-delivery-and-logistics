@@ -34,3 +34,8 @@ ALTER TABLE public.password_reset_tokens ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS password_reset_admin ON public.password_reset_tokens;
 CREATE POLICY password_reset_admin ON public.password_reset_tokens
   FOR ALL USING (public.is_admin());
+
+-- Table permissions for service zone geometry inspection
+GRANT SELECT ON public.service_zones TO authenticated, anon;
+GRANT SELECT ON public.service_localities TO authenticated, anon;
+

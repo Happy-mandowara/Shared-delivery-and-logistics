@@ -35,7 +35,7 @@ interface CartContextType {
   isCartOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
-  addItem: (item: Omit<CartItem, "quantity" | "price"> & { quantity?: number; price: number | string }, quantity?: number) => void;
+  addItem: (item: Omit<CartItem, "quantity" | "price"> & { quantity?: number; price: number | string | null | undefined }, quantity?: number) => boolean | void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -57,12 +57,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
+          // Never allow unpriced or zero-priced items from storage into payable cart
           setItems(
-            parsed.map((item: any) => ({
-              ...item,
-              price: parsePrice(item.price) ?? 0,
-              quantity: Math.max(1, Number(item.quantity) || 1),
-            }))
+            parsed
+              .filter((item: any) => {
+                const p = parsePrice(item?.price);
+                return p !== null && p > 0;
+              })
+              .map((item: any) => ({
+                ...item,
+                price: parsePrice(item.price)!,
+                quantity: Math.max(1, Number(item.quantity) || 1),
+              }))
           );
         }
       }
@@ -130,9 +136,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const total = subtotal + deliveryFee;
   const totalAmount = total;
 
-  const addItem = (item: Omit<CartItem, "quantity" | "price"> & { quantity?: number; price: number | string }, quantity = 1) => {
+  const addItem = (item: Omit<CartItem, "quantity" | "price"> & { quantity?: number; price: number | string | null | undefined }, quantity = 1) => {
     const addQty = Math.max(1, item.quantity ?? quantity);
-    const normalizedPrice = parsePrice(item.price) ?? 0;
+    const normalizedPrice = parsePrice(item.price);
+    
+    // Disallow adding unpriced or zero-priced items to the cart
+    if (normalizedPrice === null || normalizedPrice <= 0) {
+      console.warn(`[Cart] Refused to add unpriced or zero-priced product to cart: ${item.name} (price: ${item.price})`);
+      return false;
+    }
+
     setItems((prev) => {
       const existingIdx = prev.findIndex((i) => i.productId === item.productId);
       if (existingIdx >= 0) {
@@ -160,6 +173,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       ];
     });
     setIsCartOpen(true);
+    return true;
   };
 
   const removeItem = (productId: string) => {

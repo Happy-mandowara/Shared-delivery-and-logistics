@@ -110,24 +110,30 @@ export async function POST(req: NextRequest) {
 
     // 6. Delivery check: inspect SMTP / provider status honestly
     const hasSmtpConfigured = Boolean(process.env.SMTP_HOST || process.env.RESEND_API_KEY || process.env.SUPABASE_SMTP_HOST);
+    const hasSmsConfigured = Boolean(process.env.SMS_GATEWAY_API_KEY || process.env.MSG91_AUTH_KEY || process.env.TWILIO_AUTH_TOKEN);
+    const isProviderDelivered = targetType === "EMAIL" ? hasSmtpConfigured : hasSmsConfigured;
 
-    console.info(`[OTP DISPATCH] Type: ${targetType} | Destination: ${targetIdentifier} | Purpose: ${purpose} | Code: ${otpCode} | Expires: 5 mins | SMTP: ${hasSmtpConfigured ? 'Configured' : 'Not configured'}`);
+    console.info(`[OTP DISPATCH] Type: ${targetType} | Destination: ${targetIdentifier} | Purpose: ${purpose} | Code: ${otpCode} | Expires: 5 mins | Provider Delivered: ${isProviderDelivered}`);
 
     const isDevelopment = process.env.NODE_ENV !== "production";
 
     return apiSuccess({
-      sent: true,
+      generated: true,
+      sent: isProviderDelivered,
       type: targetType,
       destination: targetType === "EMAIL" 
         ? targetIdentifier.replace(/(.{2})(.*)(?=@)/, (_, a, b) => a + "*".repeat(b.length))
         : `+91 ${targetIdentifier.slice(0, 5)} ${targetIdentifier.slice(5)}`,
       expiresInSeconds: 300,
       resendCooldownSeconds: 60,
+      providerConfigured: isProviderDelivered,
       smtpConfigured: hasSmtpConfigured,
       ...(isDevelopment ? { devOtp: otpCode } : {}),
-      message: targetType === "EMAIL"
-        ? (hasSmtpConfigured ? "Verification code sent to your email address." : "Verification code generated. (SMTP provider credentials pending in .env).")
-        : "One-time verification code dispatched to mobile phone via SMS.",
+      message: isProviderDelivered
+        ? (targetType === "EMAIL" ? "Verification code sent to your email address." : "Verification code sent to your mobile phone.")
+        : (targetType === "EMAIL" 
+            ? "Verification code generated in database. Network delivery requires live SMTP credentials (SMTP_HOST/RESEND_API_KEY) in .env." 
+            : "Verification code generated in database. SMS dispatch is blocked until SMS gateway credentials are configured."),
     });
   } catch (err: any) {
     return apiError("OTP_SEND_ERROR", err.message || "Failed to dispatch verification code", 500);

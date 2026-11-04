@@ -70,12 +70,41 @@ export function LocationPickerMap({
         maxZoom: 19,
       }).addTo(map);
 
-      // Add service zone circle (12 km pilot coverage boundary)
-      L.circle([17.2485, 80.153], {
+      // Fetch authoritative service zones from API or use official default
+      let activeZone = {
+        name: "Khammam Central Pilot Zone",
+        code: "ZONE_KHAMMAM_CENTRAL",
+        centerLat: 17.2485,
+        centerLng: 80.153,
+        radiusKm: 12.0,
+      };
+
+      try {
+        const res = await fetch("/api/v1/zones");
+        if (res.ok) {
+          const json = await res.json();
+          const zones = json.data?.zones || json.data || [];
+          if (Array.isArray(zones) && zones.length > 0) {
+            const z = zones[0];
+            activeZone = {
+              name: z.name || activeZone.name,
+              code: z.code || activeZone.code,
+              centerLat: Number(z.center_latitude || z.centerLat || activeZone.centerLat),
+              centerLng: Number(z.center_longitude || z.centerLng || activeZone.centerLng),
+              radiusKm: Number(z.radius_km || z.radiusKm || activeZone.radiusKm),
+            };
+          }
+        }
+      } catch {
+        // Fall back to default authoritative parameters
+      }
+
+      // Add authoritative service zone circle (12 km pilot coverage boundary: 12,000 meters)
+      L.circle([activeZone.centerLat, activeZone.centerLng], {
         color: "#0F766E",
         fillColor: "#0F766E",
         fillOpacity: 0.08,
-        radius: 6000,
+        radius: activeZone.radiusKm * 1000,
         weight: 1.5,
         dashArray: "4, 6",
       }).addTo(map);

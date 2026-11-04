@@ -33,8 +33,21 @@ export async function POST(req: NextRequest) {
       [cleanPhone, userEmail]
     );
 
+    const existingAuthUser = await pool.query(
+      `SELECT id FROM auth.users WHERE lower(email) = lower($1)`,
+      [userEmail]
+    );
+
     if (existingUser.rows.length > 0) {
       userId = existingUser.rows[0].id;
+    } else if (existingAuthUser.rows.length > 0) {
+      userId = existingAuthUser.rows[0].id;
+      await pool.query(
+        `INSERT INTO public.users (id, name, email, phone, role, is_active)
+         VALUES ($1, $2, $3, $4, 'PARTNER', true)
+         ON CONFLICT (id) DO UPDATE SET role = 'PARTNER', phone = $4`,
+        [userId, fullName.trim(), userEmail, cleanPhone]
+      );
     } else {
       userId = crypto.randomUUID();
       await pool.query(
@@ -76,13 +89,13 @@ export async function POST(req: NextRequest) {
     // 4. Log audit event
     await pool.query(
       `INSERT INTO public.delivery_events (
-         event_type, entity_type, entity_id, actor_id, actor_role, notes
+         type, actor_id, message, reason, metadata
        )
-       VALUES ('PARTNER_ONBOARDING_SUBMITTED', 'DELIVERY_PARTNER', $1, $2, 'PARTNER', $3)`,
+       VALUES ('NOTE', $1, $2, 'PARTNER_ONBOARDING', $3)`,
       [
-        partnerId,
         userId,
         `Partner application submitted by ${fullName.trim()} (DL: ${drivingLicense}, Locality: ${locality})`,
+        JSON.stringify({ partnerId, userId, drivingLicense, locality, vehicleType, vehicleRegNumber }),
       ]
     );
 

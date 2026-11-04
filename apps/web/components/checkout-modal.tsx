@@ -21,6 +21,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { parsePrice } from "@nationx/shared";
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -71,6 +72,16 @@ export function CheckoutModal({ isOpen, onClose, onOrderCompleted }: CheckoutMod
     }
     if (!selectedAddress) {
       setError("Please select or add a delivery address in Khammam");
+      return;
+    }
+
+    // Pricing Integrity Check: Block unpriced/unconfirmed items from entering checkout
+    const unpricedItems = items.filter((i) => {
+      const p = parsePrice(i.price);
+      return p === null || p <= 0;
+    });
+    if (unpricedItems.length > 0) {
+      setError(`Cannot place order: Item(s) "${unpricedItems.map((i) => i.name).join(", ")}" have unconfirmed prices. Please remove them before proceeding.`);
       return;
     }
 

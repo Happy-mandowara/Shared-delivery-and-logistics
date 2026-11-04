@@ -25,14 +25,15 @@ Each capability across the NationX platform is classified into one of six rigoro
 |---|---|---|---|
 | Merchant Storefront Discovery | **IMPLEMENTED_VERIFIED** | `/explore`, `/shops/[slug]`, `/api/v1/merchants` | Verified with live Khammam seed merchants. |
 | Multi-Shop Cart & Independent Subtotals | **IMPLEMENTED_VERIFIED** | `components/cart-drawer.tsx`, `cart-context.tsx` | Groups by shop, calculates shared delivery fees. |
-| Single Image Product Display | **IMPLEMENTED_VERIFIED** | `public.products.image_url`, `/shops/[id]` | Displays primary product image. |
-| Multi-Image Product Gallery | **PARTIALLY_IMPLEMENTED** | Schema has single `image_url` | Need `image_urls TEXT[]` and gallery thumbnails. |
-| Client-Side Image Upload & Compression | **NOT_IMPLEMENTED** | — | Need upload utility (WebP compression, preview, replace). |
-| Product Variants & Units (e.g. 500g, 1kg) | **PARTIALLY_IMPLEMENTED** | Schema has generic `handling_tags` | Need structured variants schema (`variants JSONB`). |
+| Single Image Product Display | **IMPLEMENTED_VERIFIED** | `public.products.image_url`, `/shops/[id]` | Displays primary product image with fallback. |
+| Multi-Image Product Gallery | **IMPLEMENTED_VERIFIED** | `components/ui/product-gallery-modal.tsx` | Full thumbnail gallery & lightbox modal verified. |
+| Client-Side Image Upload & Compression | **IMPLEMENTED_VERIFIED** | `components/ui/image-upload-field.tsx` | WebP client-side compression & preview verified. |
+| Product Variants & Pricing Safeguards | **IMPLEMENTED_VERIFIED** | `packages/shared/src/utils.ts`, `cart-context.tsx` | `parsePrice`, `formatCurrency`, unpriced protection verified. |
+| Authoritative Server-Side Pricing | **IMPLEMENTED_VERIFIED** | `apps/web/app/api/v1/orders/route.ts` | Overrides client price tampering; bills DB price. |
 | Multi-Merchant Checkout & Order Dispatch | **IMPLEMENTED_VERIFIED** | `/customer/checkout`, `/api/v1/orders` [201] | Verified multi-suborder creation. |
 | Customer Address Management | **IMPLEMENTED_VERIFIED** | `/customer/addresses`, `/api/v1/customer/addresses` | Seeded and custom addresses with locality. |
-| Customer Wishlist | **PARTIALLY_IMPLEMENTED** | `/customer/wishlist` (LocalStorage only) | Need backend persistence table `customer_wishlist`. |
-| Customer Invoices & Receipts | **PARTIALLY_IMPLEMENTED** | `/customer/orders/[id]` (Basic breakdown) | Need printable/downloadable PDF/HTML tax invoice. |
+| Customer Wishlist | **IMPLEMENTED_VERIFIED** | `/api/v1/customer/wishlist`, `public.customer_wishlist` | Verified database persistence & customer isolation. |
+| Customer Invoices & Receipts | **IMPLEMENTED_VERIFIED** | `/customer/orders/[id]`, PDF print stylesheet | Itemized VAT/delivery fee breakdown. |
 
 ### Domain 2: Merchant Portal & Catalogue Management
 | Capability | Current State | Evidence / Files | Gap Analysis & Action Required |
@@ -40,11 +41,11 @@ Each capability across the NationX platform is classified into one of six rigoro
 | Suborder Acceptance & Prep Countdown | **IMPLEMENTED_VERIFIED** | `/merchant/orders`, `/api/v1/merchants/suborders/.../accept` | 20-minute preparation timer verified. |
 | Readiness Staging (`READY_FOR_PICKUP`) | **IMPLEMENTED_VERIFIED** | `/api/v1/merchants/suborders/.../ready` | Signals batch formation engine. |
 | Stock Status & Freshness Protocol | **IMPLEMENTED_VERIFIED** | `/merchant/inventory`, `PATCH /api/v1/products/[id]` | 3-day freshness check verified. |
-| Individual Product Add / Edit | **PARTIALLY_IMPLEMENTED** | `/merchant/products/new`, `/merchant/products/[id]` | Forms exist, need multi-image & variants support. |
-| Product Duplication & Archiving | **PARTIALLY_IMPLEMENTED** | Basic toggle active/inactive | Add duplicate button and soft-archive workflow. |
-| Bulk Catalogue Import (CSV/Excel) | **NOT_IMPLEMENTED** | — | Need CSV parser endpoint `/api/v1/merchants/products/import`. |
-| Shop Profile & Operating Hours Editor | **PARTIALLY_IMPLEMENTED** | `/merchant/shop-profile` (Display only) | Need editable form updating `public.merchants`. |
-| Guided 10-Step Merchant Onboarding | **NOT_IMPLEMENTED** | `/register/shop` (Flat single form) | Need Airbnb-style step-by-step guided registration. |
+| Individual Product Add / Edit | **IMPLEMENTED_VERIFIED** | `/merchant/products/new`, `/merchant/products/[id]` | Full CRUD with WebP uploads & variant pricing. |
+| Product Duplication & Archiving | **IMPLEMENTED_VERIFIED** | `POST /api/v1/merchants/products/[id]/duplicate` | Verified 1-click catalog item cloning. |
+| Bulk Catalogue Import (CSV/JSON) | **IMPLEMENTED_VERIFIED** | `POST /api/v1/merchants/products/import` | Verified batch import of products. |
+| Shop Profile & Operating Hours Editor | **IMPLEMENTED_VERIFIED** | `/merchant/shop-profile`, `public.merchants` | Working location picker map & profile editor. |
+| Guided 10-Step Merchant Onboarding | **IMPLEMENTED_VERIFIED** | `/register/shop`, `POST /api/v1/merchants/onboarding` | 10-step wizard with draft autosave. |
 
 ### Domain 3: Authentication, Accounts & Security
 | Capability | Current State | Evidence / Files | Gap Analysis & Action Required |
@@ -52,10 +53,12 @@ Each capability across the NationX platform is classified into one of six rigoro
 | Email / Password Auth (GoTrue) | **IMPLEMENTED_VERIFIED** | `/api/v1/auth/login`, `/api/v1/auth/register` | Verified JWT authentication. |
 | Role-Based Portal Guards | **IMPLEMENTED_VERIFIED** | `components/layouts/*`, `/unauthorized` | Cross-role violations intercepted. |
 | Customer Data Privacy & RLS | **IMPLEMENTED_VERIFIED** | `supabase/migrations/20261103000003_*.sql` | Verified RLS isolates orders, stops, addresses. |
-| Google OAuth Sign-In | **REQUIRES_CONFIGURATION** | `/login`, `/api/v1/auth` | Need Google OAuth Client ID & redirect handler. |
-| Phone Number OTP Authentication | **REQUIRES_CONFIGURATION** | `/api/v1/auth/otp` | Need SMS provider gateway abstraction (Twilio/MSG91). |
-| Password Reset / Recovery | **NOT_IMPLEMENTED** | — | Need `/api/v1/auth/password/reset` with secure tokens. |
-| Email Verification Handshake | **NOT_IMPLEMENTED** | — | Need email verification link & token validation. |
+| Google OAuth Sign-In | **IMPLEMENTED_VERIFIED** | `/auth/callback`, `lib/supabase/client.ts` | Complete SSR exchange & account linkage. |
+| Phone Number OTP Authentication | **IMPLEMENTED_VERIFIED** | `/api/v1/auth/otp/send`, `/verify` | Truthful provider delivery check (`generated=true`). |
+| Email OTP Authentication | **IMPLEMENTED_VERIFIED** | `/api/v1/auth/otp/send`, `/verify` | Rate-limited, 60s cooldown, verified sessions. |
+| Password Reset / Recovery Lifecycle | **IMPLEMENTED_VERIFIED** | `/api/v1/auth/password/reset-request`, `reset-confirm` | 15-min crypto tokens, replay prevention. |
+| Delivery Partner Onboarding Guard | **IMPLEMENTED_VERIFIED** | `/api/v1/partners/register`, `admin/partners` | Admin approval required before going online. |
+| Server-Side Service Zone Authority | **IMPLEMENTED_VERIFIED** | `apps/web/app/api/v1/orders/route.ts` | Rejects out-of-coverage destinations via Haversine. |
 
 ### Domain 4: Dispatch, Batching & Routing Engine
 | Capability | Current State | Evidence / Files | Gap Analysis & Action Required |

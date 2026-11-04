@@ -235,23 +235,41 @@ export default function ProductDetailPage() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      addItem({
-                        productId: product.id,
-                        merchantId: product.merchant_id,
-                        merchantName: product.merchant_name || "Merchant Shop",
-                        name: product.name,
-                        price: Number(product.price),
-                        quantity: qty,
-                      });
-                      openCart();
-                    }}
-                    className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[44px] shadow-xs"
-                  >
-                    <ShoppingBag className="w-4 h-4" />
-                    <span>Add {qty} to Order ({formatCurrency(((parsePrice(product.price) ?? 0) * qty))})</span>
-                  </button>
+                  {(() => {
+                    const parsedPrice = parsePrice(product.price);
+                    const isPriced = parsedPrice !== null && parsedPrice > 0;
+                    return (
+                      <button
+                        onClick={() => {
+                          if (!isPriced || parsedPrice === null) return;
+                          addItem({
+                            productId: product.id,
+                            merchantId: product.merchant_id,
+                            merchantName: product.merchant_name || "Merchant Shop",
+                            name: product.name,
+                            price: parsedPrice,
+                            quantity: qty,
+                          });
+                          openCart();
+                        }}
+                        disabled={!isPriced || product.stock_status === "OUT_OF_STOCK"}
+                        className={`w-full sm:w-auto px-6 py-3 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[44px] shadow-xs ${
+                          !isPriced || product.stock_status === "OUT_OF_STOCK"
+                            ? "bg-neutral-200 text-neutral-400 cursor-not-allowed"
+                            : "bg-[#0F766E] hover:bg-[#0D625C] text-white"
+                        }`}
+                      >
+                        <ShoppingBag className="w-4 h-4" />
+                        <span>
+                          {!isPriced 
+                            ? "Call Shop for Quotation" 
+                            : product.stock_status === "OUT_OF_STOCK" 
+                            ? "Out of Stock" 
+                            : `Add ${qty} to Order (${formatCurrency(parsedPrice * qty)})`}
+                        </span>
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

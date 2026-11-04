@@ -69,7 +69,7 @@ async function runTests() {
     const res = await sendOtpHandler(req);
     const json = await res.json();
     assert.strictEqual(res.status, 200);
-    assert.strictEqual(json.data.sent, true);
+    assert.strictEqual(json.data.generated, true);
     assert.strictEqual(json.data.type, "EMAIL");
     pass("Dispatches Email OTP and logs honest SMTP provider configuration notice");
   } catch (e) {

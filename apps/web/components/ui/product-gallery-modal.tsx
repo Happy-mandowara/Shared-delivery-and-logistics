@@ -79,7 +79,7 @@ export function ProductGalleryModal({
 
   const rawPrice = selectedVariant ? selectedVariant.price : product.price;
   const currentPrice = parsePrice(rawPrice);
-  const isPriceValid = currentPrice !== null && currentPrice >= 0;
+  const isPriceValid = currentPrice !== null && currentPrice > 0;
 
   const handleAddToCart = () => {
     if (!isPriceValid || currentPrice === null) return;
