@@ -248,7 +248,8 @@ export default function ShopStorefrontPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProducts.map((p: any) => {
                 const quantity = getItemQuantity(p.id);
-                const primaryImg = (p.image_urls && p.image_urls[0]) || p.image_url;
+                const primaryImg = p.imageUrl || p.image_url || (p.imageUrls && p.imageUrls[0]) || (p.image_urls && p.image_urls[0]);
+                const allImgs = (p.imageUrls && p.imageUrls.length > 0) ? p.imageUrls : (p.image_urls || (primaryImg ? [primaryImg] : []));
                 return (
                   <div
                     key={p.id}

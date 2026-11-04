@@ -194,10 +194,10 @@ export default function RegisterShopPage() {
         submitApplication: true
       });
 
-      if (res.data?.success) {
+      if (res.success) {
         setIsSubmittedSuccess(true);
       } else {
-        setErrorMessage(res.data?.error?.message || "Submission failed. Please verify required fields.");
+        setErrorMessage(res.error?.message || "Submission failed. Please verify required fields.");
       }
     } catch (err: any) {
       setErrorMessage(err.message || "An unexpected error occurred.");

@@ -58,10 +58,10 @@ export default function CustomerComplaintPage() {
         photoUrls,
       });
 
-      if (res.data?.success) {
+      if (res.success || res.data?.success) {
         setIsSuccess(true);
       } else {
-        setErrorMessage(res.data?.error?.message || "Failed to submit defect report.");
+        setErrorMessage(res.error?.message || res.data?.error?.message || "Failed to submit defect report.");
       }
     } catch (err: any) {
       setErrorMessage(err.message || "An unexpected error occurred.");

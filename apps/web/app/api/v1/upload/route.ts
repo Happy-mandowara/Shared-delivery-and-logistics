@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { apiSuccess, apiError } from "@/lib/api-response";
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { UserRole } from "@nationx/shared";
 import fs from "fs/promises";
 import path from "path";
@@ -20,7 +21,7 @@ function getUploadsDir(): string {
 /**
  * POST /api/v1/upload
  * Handles authenticated image uploads (storefronts, products, verification docs).
- * Saves to public/uploads with unique cryptographic filename.
+ * Uploads to Supabase Storage bucket 'product-images' and mirrors to local disk.
  */
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req, [
@@ -35,6 +36,7 @@ export async function POST(req: NextRequest) {
     const contentType = req.headers.get("content-type") || "";
     let buffer: Buffer;
     let extension = "webp";
+    let mimeType = "image/webp";
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
@@ -53,6 +55,7 @@ export async function POST(req: NextRequest) {
 
       const arrayBuffer = await file.arrayBuffer();
       buffer = Buffer.from(arrayBuffer);
+      mimeType = file.type;
 
       if (file.type === "image/png") extension = "png";
       else if (file.type === "image/jpeg") extension = "jpg";
@@ -71,9 +74,11 @@ export async function POST(req: NextRequest) {
         if (!ALLOWED_MIME_TYPES.includes(mime)) {
           return apiError("UNSUPPORTED_MEDIA_TYPE", `MIME ${mime} not allowed`, 415);
         }
+        mimeType = mime;
         if (mime.includes("png")) extension = "png";
         else if (mime.includes("jpeg")) extension = "jpg";
         else if (mime.includes("webp")) extension = "webp";
+        else if (mime.includes("gif")) extension = "gif";
 
         buffer = Buffer.from(match[2], "base64");
       } else {
@@ -87,21 +92,50 @@ export async function POST(req: NextRequest) {
 
     const uniqueId = crypto.randomUUID();
     const fileName = `${uniqueId}.${extension}`;
-    const uploadsDir = getUploadsDir();
+    const storagePath = `products/${fileName}`;
+    const bucket = "product-images";
 
-    // Ensure uploads directory exists
-    await fs.mkdir(uploadsDir, { recursive: true });
+    // 1. Mirror write to local filesystem as fallback / cache
+    try {
+      const uploadsDir = getUploadsDir();
+      await fs.mkdir(uploadsDir, { recursive: true });
+      const filePath = path.join(uploadsDir, fileName);
+      await fs.writeFile(filePath, buffer);
+    } catch (fsErr) {
+      console.warn("[Upload FS Warning]: Could not write to local disk:", fsErr);
+    }
 
-    const filePath = path.join(uploadsDir, fileName);
-    await fs.writeFile(filePath, buffer);
+    // 2. Persist to authoritative Supabase Storage bucket
+    let publicUrl = `/uploads/${fileName}`;
+    const supabaseAdmin = createSupabaseAdminClient();
+    if (supabaseAdmin) {
+      const { data: uploadData, error: storageErr } = await supabaseAdmin.storage
+        .from(bucket)
+        .upload(storagePath, buffer, {
+          contentType: mimeType,
+          upsert: true,
+        });
 
-    const publicUrl = `/uploads/${fileName}`;
+      if (storageErr) {
+        console.error("[Supabase Storage Upload Error]:", storageErr);
+      } else if (uploadData) {
+        const { data: publicUrlData } = supabaseAdmin.storage
+          .from(bucket)
+          .getPublicUrl(storagePath);
+        if (publicUrlData?.publicUrl) {
+          publicUrl = publicUrlData.publicUrl;
+        }
+      }
+    }
 
     return apiSuccess({
       url: publicUrl,
+      publicUrl,
       fileName,
+      storagePath,
+      bucket,
       sizeBytes: buffer.length,
-      mimeType: `image/${extension}`,
+      mimeType,
     }, 201);
   } catch (err: any) {
     return apiError("UPLOAD_FAILED", err.message || "Failed to process image upload", 500);

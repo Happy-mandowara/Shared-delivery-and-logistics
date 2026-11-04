@@ -55,18 +55,23 @@ export default function MerchantCreateProductPage() {
         description,
         price: parseFloat(price),
         unit,
+        weightGrams: weightGrams ? parseInt(weightGrams) : undefined,
         weight_grams: weightGrams ? parseInt(weightGrams) : undefined,
+        handlingTag: handling,
         handling_requirements: handling,
+        stockStatus: stockStatus,
         stock_status: stockStatus,
+        imageUrl: imageUrls[0] || undefined,
         image_url: imageUrls[0] || undefined,
+        imageUrls: imageUrls,
         image_urls: imageUrls,
         variants: validVariants.length > 0 ? validVariants : undefined,
       });
 
-      if (res.data?.success) {
+      if (res.success) {
         router.push("/merchant/products");
       } else {
-        setErrorMsg(res.data?.error?.message || "Failed to create product.");
+        setErrorMsg(res.error?.message || "Failed to create product.");
       }
     } catch (err: any) {
       setErrorMsg(err.message || "An unexpected error occurred.");

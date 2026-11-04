@@ -48,18 +48,19 @@ export default function MerchantEditProductPage() {
       setDescription(productData.description || "");
       setPrice(String(productData.price || ""));
       setUnit(productData.unit || "piece");
-      setWeightGrams(productData.weight_grams ? String(productData.weight_grams) : "");
-      setHandling(productData.handling_requirements || "STANDARD");
-      setStockStatus(productData.stock_status || "IN_STOCK");
+      setWeightGrams(productData.weightGrams ? String(productData.weightGrams) : (productData.weight_grams ? String(productData.weight_grams) : ""));
+      setHandling(productData.handlingTag || productData.handling_tag || productData.handling_requirements || "STANDARD");
+      setStockStatus(productData.stockStatus || productData.stock_status || "IN_STOCK");
 
       // Populate images
-      if (Array.isArray(productData.image_urls) && productData.image_urls.length > 0) {
-        setImageUrls(productData.image_urls);
-      } else if (productData.image_url) {
-        setImageUrls([productData.image_url]);
-      } else {
-        setImageUrls([]);
-      }
+      const loadedImgs = (Array.isArray(productData.imageUrls) && productData.imageUrls.length > 0)
+        ? productData.imageUrls
+        : (Array.isArray(productData.image_urls) && productData.image_urls.length > 0)
+          ? productData.image_urls
+          : (productData.imageUrl || productData.image_url)
+            ? [productData.imageUrl || productData.image_url]
+            : [];
+      setImageUrls(loadedImgs);
 
       // Populate variants
       if (Array.isArray(productData.variants)) {
@@ -93,13 +94,22 @@ export default function MerchantEditProductPage() {
         description,
         price: parseFloat(price),
         unit,
+        weightGrams: weightGrams ? parseInt(weightGrams) : null,
         weight_grams: weightGrams ? parseInt(weightGrams) : null,
+        handlingTag: handling,
+        handling_tag: handling,
         handling_requirements: handling,
+        stockStatus: stockStatus,
         stock_status: stockStatus,
+        imageUrl: imageUrls[0] || null,
         image_url: imageUrls[0] || null,
+        imageUrls: imageUrls,
         image_urls: imageUrls,
         variants: validVariants.length > 0 ? validVariants : [],
       });
+      if (!res.success) {
+        throw new Error(res.error?.message || "Failed to update product");
+      }
       return res.data;
     },
     onSuccess: () => {

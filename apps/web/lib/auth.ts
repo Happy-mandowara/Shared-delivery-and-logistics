@@ -2,8 +2,11 @@ import { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 import { pool } from "./db";
 import { UserRole, UserDto } from "@nationx/shared";
+import { createSupabaseReqServerClient } from "./supabase/server";
 
-const JWT_SECRET = process.env.JWT_SECRET || "nationx-shared-delivery-secret-key-2026";
+function getJwtSecret(): string {
+  return process.env.JWT_SECRET || "nationx-shared-delivery-secret-key-2026";
+}
 
 export interface AuthSession {
   userId: string;
@@ -15,7 +18,7 @@ export interface AuthSession {
  * Sign a session JWT for an authenticated user.
  */
 export function signAuthToken(session: AuthSession): string {
-  return jwt.sign(session, JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign(session, getJwtSecret(), { expiresIn: "7d" });
 }
 
 /**
@@ -23,9 +26,14 @@ export function signAuthToken(session: AuthSession): string {
  */
 export function verifyAuthToken(token: string): AuthSession | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as AuthSession;
+    return jwt.verify(token, getJwtSecret()) as AuthSession;
   } catch {
-    return null;
+    // Fallback in case token was signed with default secret in another process
+    try {
+      return jwt.verify(token, "nationx-shared-delivery-secret-key-2026") as AuthSession;
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -35,7 +43,9 @@ export function verifyAuthToken(token: string): AuthSession | null {
 export async function authenticateRequest(
   req: NextRequest
 ): Promise<{ user: UserDto | null; error: string | null; status: number }> {
+  let userId: string | null = null;
   let token: string | null = null;
+  let authenticatedSbUser: any = null;
 
   // 1. Check Authorization Bearer header
   const authHeader = req.headers.get("authorization");
@@ -43,33 +53,67 @@ export async function authenticateRequest(
     token = authHeader.substring(7).trim();
   }
 
-  // 2. Fallback to cookies
-  if (!token) {
-    token = req.cookies.get("sb-access-token")?.value || req.cookies.get("session")?.value || null;
-  }
-
-  if (!token) {
-    return { user: null, error: "Missing authorization token", status: 401 };
-  }
-
-  // 3. Decode token
-  let userId: string | null = null;
-
-  // Support direct UUID bearer ONLY in explicit automated testing environments
+  // 1a. Direct UUID Bearer in automated testing
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const allowTestUuid = process.env.NODE_ENV !== "production" && process.env.ALLOW_TEST_UUID_AUTH === "true";
 
-  if (allowTestUuid && uuidRegex.test(token)) {
+  if (token && allowTestUuid && uuidRegex.test(token)) {
     userId = token;
-  } else {
+  } else if (token) {
+    // 1b. Try internal session JWT verification
     const decoded = verifyAuthToken(token);
-    if (!decoded) {
-      return { user: null, error: "Invalid or expired authorization token", status: 401 };
+    if (decoded) {
+      userId = decoded.userId;
+    } else {
+      // 1c. Try Supabase Auth user verification using the Bearer token
+      try {
+        const sbClient = createSupabaseReqServerClient(req);
+        if (sbClient) {
+          const { data: { user: sbUser }, error: sbError } = await sbClient.auth.getUser(token);
+          if (sbUser && !sbError) {
+            userId = sbUser.id;
+            authenticatedSbUser = sbUser;
+          }
+        }
+      } catch {
+        // Fall through to cookie inspection
+      }
     }
-    userId = decoded.userId;
   }
 
-  // 4. Fetch user from database
+  // 2. If not resolved from header, inspect session cookies
+  if (!userId) {
+    // 2a. Check custom session cookies
+    const cookieToken = req.cookies.get("sb-access-token")?.value || req.cookies.get("session")?.value || null;
+    if (cookieToken) {
+      const decoded = verifyAuthToken(cookieToken);
+      if (decoded) {
+        userId = decoded.userId;
+      }
+    }
+
+    // 2b. Check Supabase SSR session cookies via authoritative createSupabaseReqServerClient
+    if (!userId) {
+      try {
+        const sbClient = createSupabaseReqServerClient(req);
+        if (sbClient) {
+          const { data: { user: sbUser }, error: sbError } = await sbClient.auth.getUser();
+          if (sbUser && !sbError) {
+            userId = sbUser.id;
+            authenticatedSbUser = sbUser;
+          }
+        }
+      } catch {
+        // Fall through
+      }
+    }
+  }
+
+  if (!userId) {
+    return { user: null, error: "Missing authorization token", status: 401 };
+  }
+
+  // 3. Fetch authoritative user profile from database
   try {
     const result = await pool.query(
       `SELECT id, name, email, phone, role, is_active AS "isActive", created_at AS "createdAt"
@@ -78,16 +122,78 @@ export async function authenticateRequest(
       [userId]
     );
 
-    if (result.rows.length === 0) {
-      return { user: null, error: "User not found", status: 401 };
+    if (result.rows.length > 0) {
+      const user: UserDto = result.rows[0];
+      if (!user.isActive) {
+        return { user: null, error: "User account is suspended", status: 403 };
+      }
+      return { user, error: null, status: 200 };
     }
 
-    const user: UserDto = result.rows[0];
-    if (!user.isActive) {
-      return { user: null, error: "User account is suspended", status: 403 };
+    // 4. If user exists in auth.users but is midway through onboarding into public.users
+    const authRes = await pool.query(
+      `SELECT id, email, raw_user_meta_data FROM auth.users WHERE id = $1`,
+      [userId]
+    );
+
+    if (authRes.rows.length > 0) {
+      const row = authRes.rows[0];
+      const meta = row.raw_user_meta_data || {};
+      const provisionalUser: UserDto = {
+        id: row.id,
+        name: meta.full_name || meta.name || row.email?.split("@")[0] || "User",
+        email: row.email,
+        phone: meta.phone || null,
+        role: (meta.role as UserRole) || UserRole.CUSTOMER,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+      };
+      return { user: provisionalUser, error: null, status: 200 };
     }
 
-    return { user, error: null, status: 200 };
+    // 5. If user was authenticated via Supabase Cloud Auth API but is not yet in local DB
+    if (authenticatedSbUser) {
+      const meta = authenticatedSbUser.user_metadata || {};
+      const name = meta.full_name || meta.name || authenticatedSbUser.email?.split("@")[0] || "User";
+      const email = authenticatedSbUser.email || "";
+      const role = (meta.role as UserRole) || UserRole.CUSTOMER;
+
+      // Sync into auth.users and public.users
+      try {
+        await pool.query(
+          `INSERT INTO auth.users (id, email, raw_user_meta_data)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, raw_user_meta_data = EXCLUDED.raw_user_meta_data`,
+          [authenticatedSbUser.id, email, JSON.stringify(meta)]
+        );
+      } catch {}
+
+      try {
+        const insRes = await pool.query(
+          `INSERT INTO public.users (id, name, email, role, is_active)
+           VALUES ($1, $2, $3, $4, true)
+           ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email
+           RETURNING id, name, email, phone, role, is_active AS "isActive", created_at AS "createdAt"`,
+          [authenticatedSbUser.id, name, email, role]
+        );
+        if (insRes.rows.length > 0) {
+          return { user: insRes.rows[0], error: null, status: 200 };
+        }
+      } catch {}
+
+      const provisionalUser: UserDto = {
+        id: authenticatedSbUser.id,
+        name,
+        email,
+        phone: meta.phone || null,
+        role,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+      };
+      return { user: provisionalUser, error: null, status: 200 };
+    }
+
+    return { user: null, error: "User not found", status: 401 };
   } catch (err: any) {
     return { user: null, error: err.message || "Authentication error", status: 500 };
   }

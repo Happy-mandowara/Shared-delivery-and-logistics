@@ -45,10 +45,10 @@ function ResetPasswordForm() {
         newPassword: password,
       });
 
-      if (res.data?.success) {
+      if (res.success || res.data?.success) {
         setIsSuccess(true);
       } else {
-        setErrorMessage(res.data?.error?.message || "Failed to update password. Link may have expired.");
+        setErrorMessage(res.error?.message || res.data?.error?.message || "Failed to update password. Link may have expired.");
       }
     } catch (err: any) {
       setErrorMessage(err.message || "An unexpected error occurred while resetting your password.");

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
 const JWT_SECRET = process.env.JWT_SECRET || "nationx-shared-delivery-secret-key-2026";
 
@@ -67,42 +68,69 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // If no token exists, immediately redirect to /login
-  if (!token) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl, 307);
+  // Verify JWT token signature and expiration
+  const session = token ? await verifyJwtEdge(token, JWT_SECRET) : null;
+  if (session) {
+    const role = session.role;
+
+    // Role-based access control
+    if (pathname.startsWith("/admin") && role !== "ADMIN") {
+      return NextResponse.redirect(new URL("/unauthorized", request.url), 307);
+    }
+
+    if (pathname.startsWith("/merchant") && role !== "MERCHANT" && role !== "ADMIN") {
+      return NextResponse.redirect(new URL("/unauthorized", request.url), 307);
+    }
+
+    if (pathname.startsWith("/partner") && role !== "PARTNER" && role !== "ADMIN") {
+      return NextResponse.redirect(new URL("/unauthorized", request.url), 307);
+    }
+
+    return NextResponse.next();
   }
 
-  // Verify JWT token signature and expiration
-  const session = await verifyJwtEdge(token, JWT_SECRET);
-  if (!session) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
+  // Fallback: Check Supabase Auth SSR session
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "");
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (supabaseUrl && supabaseAnonKey) {
+    try {
+      const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll() {},
+        },
+      });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const role = user.user_metadata?.role || "CUSTOMER";
+        if (pathname.startsWith("/admin") && role !== "ADMIN") {
+          return NextResponse.redirect(new URL("/unauthorized", request.url), 307);
+        }
+        if (pathname.startsWith("/merchant") && role !== "MERCHANT" && role !== "ADMIN") {
+          return NextResponse.redirect(new URL("/unauthorized", request.url), 307);
+        }
+        if (pathname.startsWith("/partner") && role !== "PARTNER" && role !== "ADMIN") {
+          return NextResponse.redirect(new URL("/unauthorized", request.url), 307);
+        }
+        return NextResponse.next();
+      }
+    } catch {
+      // Continue to redirect
+    }
+  }
+
+  const loginUrl = new URL("/login", request.url);
+  loginUrl.searchParams.set("redirect", pathname);
+  if (token) {
     loginUrl.searchParams.set("error", "session_expired");
     const response = NextResponse.redirect(loginUrl, 307);
     response.cookies.delete("sb-access-token");
     response.cookies.delete("session");
     return response;
   }
-
-  const role = session.role;
-
-  // Role-based access control
-  if (pathname.startsWith("/admin") && role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/unauthorized", request.url), 307);
-  }
-
-  if (pathname.startsWith("/merchant") && role !== "MERCHANT" && role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/unauthorized", request.url), 307);
-  }
-
-  if (pathname.startsWith("/partner") && role !== "PARTNER" && role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/unauthorized", request.url), 307);
-  }
-
-  // Token is valid and role has permission
-  return NextResponse.next();
+  return NextResponse.redirect(loginUrl, 307);
 }
 
 export const config = {

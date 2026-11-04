@@ -49,8 +49,22 @@ export async function GET(
     }
 
     const row = res.rows[0];
+    const img = row.imageUrl || row.image_url || null;
+    const imgs = (row.imageUrls && row.imageUrls.length > 0) ? row.imageUrls : (row.image_urls || (img ? [img] : []));
     const product = {
       ...row,
+      imageUrl: img,
+      image_url: img,
+      imageUrls: imgs,
+      image_urls: imgs,
+      merchantId: row.merchantId || row.merchant_id,
+      merchant_id: row.merchantId || row.merchant_id,
+      weightGrams: row.weightGrams ?? row.weight_grams ?? 0,
+      weight_grams: row.weightGrams ?? row.weight_grams ?? 0,
+      handlingTag: row.handlingTag || row.handling_tag || "STANDARD",
+      handling_tag: row.handlingTag || row.handling_tag || "STANDARD",
+      stockStatus: row.stockStatus || row.stock_status || "IN_STOCK",
+      stock_status: row.stockStatus || row.stock_status || "IN_STOCK",
       price: row.price !== null && row.price !== undefined ? Number(row.price) : null,
       variants: Array.isArray(row.variants)
         ? row.variants.map((v: any) => ({
@@ -119,14 +133,21 @@ export async function PATCH(
       values.push(Number(body.price));
     }
 
-    if (body.imageUrl !== undefined || body.image_url !== undefined) {
+    const candidateUrls = [
+      ...(Array.isArray(body.imageUrls) ? body.imageUrls : []),
+      ...(Array.isArray(body.image_urls) ? body.image_urls : []),
+    ].filter(Boolean);
+
+    if (body.imageUrl !== undefined || body.image_url !== undefined || candidateUrls.length > 0) {
+      const primary = body.imageUrl || body.image_url || (candidateUrls.length > 0 ? candidateUrls[0] : null);
       updates.push(`image_url = $${idx++}`);
-      values.push(body.imageUrl || body.image_url);
+      values.push(primary);
     }
 
-    if (body.imageUrls !== undefined || body.image_urls !== undefined) {
+    if (body.imageUrls !== undefined || body.image_urls !== undefined || candidateUrls.length > 0) {
+      const allImgs = candidateUrls.length > 0 ? candidateUrls : (body.imageUrl || body.image_url ? [body.imageUrl || body.image_url] : []);
       updates.push(`image_urls = $${idx++}`);
-      values.push(body.imageUrls || body.image_urls);
+      values.push(allImgs);
     }
 
     if (body.unit !== undefined) {
@@ -191,7 +212,25 @@ export async function PATCH(
       values
     );
 
-    return apiSuccess({ product: updateRes.rows[0] });
+    const updated = updateRes.rows[0];
+    const img = updated.imageUrl || updated.image_url || null;
+    const imgs = (updated.imageUrls && updated.imageUrls.length > 0) ? updated.imageUrls : (updated.image_urls || (img ? [img] : []));
+    const normalizedProduct = {
+      ...updated,
+      price: updated.price !== null && updated.price !== undefined ? Number(updated.price) : null,
+      imageUrl: img,
+      image_url: img,
+      imageUrls: imgs,
+      image_urls: imgs,
+      weightGrams: updated.weightGrams ?? updated.weight_grams ?? 0,
+      weight_grams: updated.weightGrams ?? updated.weight_grams ?? 0,
+      handlingTag: updated.handlingTag || updated.handling_tag || "STANDARD",
+      handling_tag: updated.handlingTag || updated.handling_tag || "STANDARD",
+      stockStatus: updated.stockStatus || updated.stock_status || "IN_STOCK",
+      stock_status: updated.stockStatus || updated.stock_status || "IN_STOCK",
+    };
+
+    return apiSuccess({ product: normalizedProduct });
   } catch (err: any) {
     return apiError("DATABASE_ERROR", err.message || "Failed to update product", 500);
   }

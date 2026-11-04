@@ -11,18 +11,26 @@ const CreateProductSchema = z.object({
   category: z.string().min(2).max(50),
   price: z.number().positive(),
   imageUrl: z.string().optional().nullable(),
+  image_url: z.string().optional().nullable(),
   imageUrls: z.array(z.string()).optional().default([]),
+  image_urls: z.array(z.string()).optional().default([]),
   unit: z.string().default("piece"),
   variants: z.array(z.object({
     name: z.string(),
     price: z.number().positive(),
     unit: z.string().optional(),
     stockStatus: z.string().optional(),
+    stock_status: z.string().optional(),
   })).optional().default([]),
-  weightGrams: z.number().int().nonnegative().optional().default(0),
-  handlingTag: z.enum(["STANDARD", "FRAGILE", "PERISHABLE", "HOT_FOOD", "COLD_FOOD"]).default("STANDARD"),
-  stockStatus: z.enum(["IN_STOCK", "CALL_TO_CONFIRM", "OUT_OF_STOCK"]).default("IN_STOCK"),
+  weightGrams: z.number().int().nonnegative().optional(),
+  weight_grams: z.number().int().nonnegative().optional(),
+  handlingTag: z.enum(["STANDARD", "FRAGILE", "PERISHABLE", "HOT_FOOD", "COLD_FOOD"]).optional(),
+  handling_requirements: z.enum(["STANDARD", "FRAGILE", "PERISHABLE", "HOT_FOOD", "COLD_FOOD"]).optional(),
+  handling_tag: z.enum(["STANDARD", "FRAGILE", "PERISHABLE", "HOT_FOOD", "COLD_FOOD"]).optional(),
+  stockStatus: z.enum(["IN_STOCK", "CALL_TO_CONFIRM", "OUT_OF_STOCK"]).optional(),
+  stock_status: z.enum(["IN_STOCK", "CALL_TO_CONFIRM", "OUT_OF_STOCK"]).optional(),
   merchantId: z.string().uuid().optional(),
+  merchant_id: z.string().uuid().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -104,16 +112,32 @@ export async function GET(req: NextRequest) {
     query += ` ORDER BY p.name ASC`;
 
     const res = await pool.query(query, values);
-    const products = res.rows.map((row) => ({
-      ...row,
-      price: row.price !== null && row.price !== undefined ? Number(row.price) : null,
-      variants: Array.isArray(row.variants)
-        ? row.variants.map((v: any) => ({
-            ...v,
-            price: v.price !== null && v.price !== undefined ? Number(v.price) : null,
-          }))
-        : row.variants,
-    }));
+    const products = res.rows.map((row) => {
+      const img = row.imageUrl || row.image_url || null;
+      const imgs = (row.imageUrls && row.imageUrls.length > 0) ? row.imageUrls : (row.image_urls || (img ? [img] : []));
+      return {
+        ...row,
+        imageUrl: img,
+        image_url: img,
+        imageUrls: imgs,
+        image_urls: imgs,
+        merchantId: row.merchantId || row.merchant_id,
+        merchant_id: row.merchantId || row.merchant_id,
+        weightGrams: row.weightGrams ?? row.weight_grams ?? 0,
+        weight_grams: row.weightGrams ?? row.weight_grams ?? 0,
+        handlingTag: row.handlingTag || row.handling_tag || "STANDARD",
+        handling_tag: row.handlingTag || row.handling_tag || "STANDARD",
+        stockStatus: row.stockStatus || row.stock_status || "IN_STOCK",
+        stock_status: row.stockStatus || row.stock_status || "IN_STOCK",
+        price: row.price !== null && row.price !== undefined ? Number(row.price) : null,
+        variants: Array.isArray(row.variants)
+          ? row.variants.map((v: any) => ({
+              ...v,
+              price: v.price !== null && v.price !== undefined ? Number(v.price) : null,
+            }))
+          : row.variants,
+      };
+    });
 
     return apiSuccess({ products });
   } catch (err: any) {
@@ -138,16 +162,35 @@ export async function POST(req: NextRequest) {
       category,
       price,
       imageUrl,
+      image_url,
       imageUrls,
+      image_urls,
       unit,
       variants,
       weightGrams,
+      weight_grams,
       handlingTag,
+      handling_requirements,
+      handling_tag,
       stockStatus,
+      stock_status,
       merchantId: requestedMerchantId,
+      merchant_id: requestedMerchantIdSnake,
     } = parsed.data;
 
-    let targetMerchantId = requestedMerchantId;
+    const finalWeightGrams = weightGrams ?? weight_grams ?? 0;
+    const finalHandlingTag = handlingTag || handling_requirements || handling_tag || "STANDARD";
+    const finalStockStatus = stockStatus || stock_status || "IN_STOCK";
+
+    const candidateUrls = [
+      ...(Array.isArray(imageUrls) ? imageUrls : []),
+      ...(Array.isArray(image_urls) ? image_urls : []),
+    ].filter(Boolean);
+
+    const primaryImg = imageUrl || image_url || (candidateUrls.length > 0 ? candidateUrls[0] : null);
+    const allImages = candidateUrls.length > 0 ? candidateUrls : (primaryImg ? [primaryImg] : []);
+
+    let targetMerchantId = requestedMerchantId || requestedMerchantIdSnake;
 
     if (auth.user.role === UserRole.MERCHANT) {
       const mRes = await pool.query(
@@ -161,9 +204,6 @@ export async function POST(req: NextRequest) {
     } else if (!targetMerchantId) {
       return apiError("MERCHANT_ID_REQUIRED", "Admin must specify merchantId", 400);
     }
-
-    const primaryImg = imageUrl || (imageUrls && imageUrls.length > 0 ? imageUrls[0] : null);
-    const allImages = imageUrls && imageUrls.length > 0 ? imageUrls : (primaryImg ? [primaryImg] : []);
 
     const insertRes = await pool.query(
       `INSERT INTO public.products (
@@ -211,13 +251,30 @@ export async function POST(req: NextRequest) {
         allImages,
         unit,
         JSON.stringify(variants),
-        weightGrams,
-        handlingTag,
-        stockStatus,
+        finalWeightGrams,
+        finalHandlingTag,
+        finalStockStatus,
       ]
     );
 
-    return apiSuccess({ product: insertRes.rows[0] }, 201);
+    const created = insertRes.rows[0];
+    const normalizedProduct = {
+      ...created,
+      imageUrl: created.imageUrl || primaryImg,
+      image_url: created.imageUrl || primaryImg,
+      imageUrls: created.imageUrls || allImages,
+      image_urls: created.imageUrls || allImages,
+      merchantId: created.merchantId,
+      merchant_id: created.merchantId,
+      weightGrams: created.weightGrams,
+      weight_grams: created.weightGrams,
+      handlingTag: created.handlingTag,
+      handling_tag: created.handlingTag,
+      stockStatus: created.stockStatus,
+      stock_status: created.stockStatus,
+    };
+
+    return apiSuccess({ product: normalizedProduct }, 201);
   } catch (err: any) {
     return apiError("PRODUCT_CREATION_FAILED", err.message || "Failed to create product", 500);
   }

@@ -126,8 +126,8 @@ export default function MerchantProductsPage() {
       }
 
       const res = await api.post<any>("/merchants/products/import", { products: itemsToImport });
-      if (res.data?.success) {
-        setImportResult(`Successfully imported ${res.data.count} products!`);
+      if (res.success || res.data?.success) {
+        setImportResult(`Successfully imported ${res.data?.count || itemsToImport.length} products!`);
         queryClient.invalidateQueries({ queryKey: ["merchant-products-catalog"] });
         setTimeout(() => {
           setIsImportModalOpen(false);
@@ -248,7 +248,7 @@ export default function MerchantProductsPage() {
       ) : (
         <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-2xs divide-y divide-neutral-100">
           {filtered.map((prod: any) => {
-            const primaryImg = (prod.image_urls && prod.image_urls[0]) || prod.image_url;
+            const primaryImg = prod.imageUrl || prod.image_url || (prod.imageUrls && prod.imageUrls[0]) || (prod.image_urls && prod.image_urls[0]);
             return (
               <div
                 key={prod.id}

@@ -78,8 +78,12 @@ export default function ProductDetailPage() {
   const product = productData;
   const inCart = cartItems.find((i) => i.productId === productId);
 
-  const images: string[] = product?.image_urls && product.image_urls.length > 0
+  const images: string[] = product?.imageUrls && product.imageUrls.length > 0
+    ? product.imageUrls
+    : product?.image_urls && product.image_urls.length > 0
     ? product.image_urls
+    : product?.imageUrl
+    ? [product.imageUrl]
     : product?.image_url
     ? [product.image_url]
     : [];

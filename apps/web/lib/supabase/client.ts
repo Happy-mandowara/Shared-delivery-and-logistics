@@ -7,12 +7,14 @@ let browserClient: ReturnType<typeof createBrowserClient> | null = null;
  * Returns null if Supabase credentials have not been configured.
  */
 export function getSupabaseBrowserClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!rawUrl || !supabaseAnonKey) {
     return null;
   }
+
+  const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "");
 
   if (!browserClient) {
     browserClient = createBrowserClient(supabaseUrl, supabaseAnonKey);

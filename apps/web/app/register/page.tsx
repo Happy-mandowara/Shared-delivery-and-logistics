@@ -100,14 +100,15 @@ export default function RegisterPage() {
         locality: locality || undefined,
       });
 
-      if (res.data?.success) {
-        if (res.data?.data?.token) {
-          api.setToken(res.data.data.token);
+      if (res.success || res.data?.success) {
+        const token = res.data?.token || res.data?.data?.token;
+        if (token) {
+          api.setToken(token);
         }
         // Auto sign-in and redirect to customer portal
         router.push("/customer");
       } else {
-        setErrorMessage(res.data?.error?.message || "Failed to create customer account.");
+        setErrorMessage(res.error?.message || res.data?.error?.message || "Failed to create customer account.");
       }
     } catch (err: any) {
       setErrorMessage(err.message || "An error occurred while creating your account. Please try again.");

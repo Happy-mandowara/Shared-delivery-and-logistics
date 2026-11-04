@@ -2,6 +2,8 @@
  * Frontend API client for NationX Shared Delivery (/api/v1)
  */
 
+import { getSupabaseBrowserClient } from "./supabase/client";
+
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -53,12 +55,26 @@ class ApiClient {
     const currentToken = this.getToken();
     if (currentToken && !headers.has("Authorization")) {
       headers.set("Authorization", `Bearer ${currentToken}`);
+    } else if (!headers.has("Authorization") && typeof window !== "undefined") {
+      // If no custom token in localStorage, attach active Supabase Auth session token
+      try {
+        const sbClient = getSupabaseBrowserClient();
+        if (sbClient) {
+          const { data } = await sbClient.auth.getSession();
+          if (data?.session?.access_token) {
+            headers.set("Authorization", `Bearer ${data.session.access_token}`);
+          }
+        }
+      } catch {
+        // Fall back to cookie credentials
+      }
     }
 
     const url = endpoint.startsWith("/api") ? endpoint : `/api/v1${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
 
     try {
       const res = await fetch(url, {
+        credentials: "include",
         ...options,
         headers,
       });
@@ -67,6 +83,24 @@ class ApiClient {
         success: false,
         error: { code: "INVALID_RESPONSE", message: `HTTP status ${res.status}` },
       }));
+
+      // Provide backward compatibility for code expecting Axios-style res.data.success / res.data.error
+      if (json && typeof json === "object") {
+        if (json.data && typeof json.data === "object") {
+          if (!("success" in json.data)) {
+            try {
+              Object.defineProperty(json.data, "success", {
+                value: json.success,
+                writable: true,
+                enumerable: false,
+              });
+            } catch {}
+          }
+        } else if (json.data === undefined && !json.success) {
+          // If error response with no data object
+          json.data = { success: false, error: json.error };
+        }
+      }
 
       return json;
     } catch (err: any) {
