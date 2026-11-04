@@ -15,7 +15,11 @@ export async function POST(
   const { id } = await params;
 
   try {
-    const body = await req.json();
+    const rawBody = await req.json();
+    const body = {
+      ...rawBody,
+      accept: rawBody.accept !== undefined ? rawBody.accept : (rawBody.action === "ACCEPT"),
+    };
     const parsed = RespondAssignmentInputSchema.safeParse(body);
     if (!parsed.success) {
       return apiError("VALIDATION_ERROR", "Invalid response payload", 400, parsed.error.format());

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
 import { calculateDemoDeliveryFee } from "@nationx/shared";
 
 export interface CartItem {
@@ -29,11 +29,13 @@ interface CartContextType {
   subtotal: number;
   deliveryFee: number;
   total: number;
+  totalAmount: number;
+  subtotalByMerchant: Record<string, number>;
   merchantGroups: MerchantSuborderGroup[];
   isCartOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
-  addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
+  addItem: (item: Omit<CartItem, "quantity"> & { quantity?: number }, quantity?: number) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -64,24 +66,87 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Save cart to localStorage
   useEffect(() => {
-    if (isLoaded) {
-      try {
-        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-      } catch {
-        // ignore
-      }
+    if (!isLoaded) return;
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      // ignore
     }
   }, [items, isLoaded]);
 
-  const addItem = (item: Omit<CartItem, "quantity">, quantity: number = 1) => {
-    setItems((prev) => {
-      const existing = prev.find((i) => i.productId === item.productId);
+  const itemCount = useMemo(
+    () => items.reduce((sum, item) => sum + item.quantity, 0),
+    [items]
+  );
+
+  const subtotal = useMemo(
+    () => items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [items]
+  );
+
+  const merchantGroups = useMemo(() => {
+    const groupMap = new Map<string, MerchantSuborderGroup>();
+    items.forEach((item) => {
+      const existing = groupMap.get(item.merchantId);
       if (existing) {
-        return prev.map((i) =>
-          i.productId === item.productId ? { ...i, quantity: i.quantity + quantity } : i
-        );
+        existing.items.push(item);
+        existing.subtotal += item.price * item.quantity;
+      } else {
+        groupMap.set(item.merchantId, {
+          merchantId: item.merchantId,
+          merchantName: item.merchantName,
+          merchantLocality: item.merchantLocality,
+          subtotal: item.price * item.quantity,
+          items: [item],
+        });
       }
-      return [...prev, { ...item, quantity }];
+    });
+    return Array.from(groupMap.values());
+  }, [items]);
+
+  const subtotalByMerchant = useMemo(() => {
+    const record: Record<string, number> = {};
+    merchantGroups.forEach((g) => {
+      record[g.merchantId] = g.subtotal;
+    });
+    return record;
+  }, [merchantGroups]);
+
+  const deliveryFee = useMemo(() => {
+    if (items.length === 0) return 0;
+    const feeObj = calculateDemoDeliveryFee(2.5, items.length);
+    return typeof feeObj === "number" ? feeObj : feeObj.amount;
+  }, [items.length]);
+
+  const total = subtotal + deliveryFee;
+  const totalAmount = total;
+
+  const addItem = (item: Omit<CartItem, "quantity"> & { quantity?: number }, quantity = 1) => {
+    const addQty = item.quantity ?? quantity;
+    setItems((prev) => {
+      const existingIdx = prev.findIndex((i) => i.productId === item.productId);
+      if (existingIdx >= 0) {
+        const next = [...prev];
+        next[existingIdx] = {
+          ...next[existingIdx],
+          quantity: next[existingIdx].quantity + addQty,
+        };
+        return next;
+      }
+      return [
+        ...prev,
+        {
+          productId: item.productId,
+          merchantId: item.merchantId,
+          merchantName: item.merchantName,
+          merchantLocality: item.merchantLocality,
+          name: item.name,
+          price: item.price,
+          handlingTag: item.handlingTag,
+          imageUrl: item.imageUrl,
+          quantity: addQty,
+        },
+      ];
     });
     setIsCartOpen(true);
   };
@@ -104,31 +169,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems([]);
   };
 
-  // Group items by merchant
-  const merchantMap = new Map<string, MerchantSuborderGroup>();
-  for (const item of items) {
-    if (!merchantMap.has(item.merchantId)) {
-      merchantMap.set(item.merchantId, {
-        merchantId: item.merchantId,
-        merchantName: item.merchantName,
-        merchantLocality: item.merchantLocality,
-        subtotal: 0,
-        items: [],
-      });
-    }
-    const group = merchantMap.get(item.merchantId)!;
-    group.items.push(item);
-    group.subtotal += item.price * item.quantity;
-  }
-
-  const merchantGroups = Array.from(merchantMap.values());
-  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-
-  // Authoritative demo delivery fee (base 2.5km distance assumption across Khammam)
-  const feeInfo = calculateDemoDeliveryFee(2.5, itemCount);
-  const deliveryFee = items.length > 0 ? feeInfo.amount : 0;
-  const total = subtotal + deliveryFee;
+  const openCart = () => setIsCartOpen(true);
+  const closeCart = () => setIsCartOpen(false);
 
   return (
     <CartContext.Provider
@@ -138,10 +180,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         subtotal,
         deliveryFee,
         total,
+        totalAmount,
+        subtotalByMerchant,
         merchantGroups,
         isCartOpen,
-        openCart: () => setIsCartOpen(true),
-        closeCart: () => setIsCartOpen(false),
+        openCart,
+        closeCart,
         addItem,
         removeItem,
         updateQuantity,
@@ -160,4 +204,3 @@ export function useCart() {
   }
   return context;
 }
-

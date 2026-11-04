@@ -2,46 +2,39 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Navbar } from "@/components/ui/navbar";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { Modal } from "@/components/ui/modal";
-import { useAuth } from "@/components/providers";
-import { useCart } from "@/components/cart-context";
-import { CartDrawer } from "@/components/cart-drawer";
-import { CheckoutModal } from "@/components/checkout-modal";
-import { InteractiveMap, MapMarkerItem } from "@/components/maps/interactive-map";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
-import {
-  MapPin,
-  Search,
-  Store,
-  Layers,
-  Sparkles,
-  ShoppingBag,
-  Plus,
-  Minus,
-  Check,
-  Clock,
-  ArrowRight,
-  Flame,
-  ShieldCheck,
-  Truck,
-  Info
+import { 
+  ShoppingBag, 
+  Store, 
+  Truck, 
+  MapPin, 
+  Search, 
+  ArrowRight, 
+  Layers, 
+  ShieldCheck, 
+  Clock, 
+  TrendingUp, 
+  Users, 
+  Sparkles, 
+  CheckCircle2, 
+  PhoneCall, 
+  Compass, 
+  IndianRupee,
+  Navigation,
+  ChevronRight,
+  PackageCheck
 } from "lucide-react";
+import { PublicLayout } from "@/components/layouts/public-layout";
+import { api } from "@/lib/api-client";
+import { RouteMap } from "@/components/ui/route-map";
+import { useCart } from "@/components/cart-context";
 
-export default function MarketplaceHomePage() {
-  const { user } = useAuth();
+export default function RebuiltHomePage() {
   const { addItem, items: cartItems } = useCart();
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [selectedMerchantId, setSelectedMerchantId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocality, setSelectedLocality] = useState<string>("ALL");
-  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
 
-  // 1. Fetch Merchants
+  // 1. Fetch Verified Pilot Merchants
   const { data: merchantsData, isLoading: isLoadingMerchants } = useQuery({
     queryKey: ["merchants", searchQuery, selectedLocality],
     queryFn: async () => {
@@ -58,425 +51,617 @@ export default function MarketplaceHomePage() {
 
   const merchants = merchantsData || [];
 
-  // 2. Fetch Selected Merchant Products (Storefront Modal)
-  const { data: storeProductsData, isLoading: isLoadingProducts } = useQuery({
-    queryKey: ["merchant-products", selectedMerchantId, selectedCategory],
-    queryFn: async () => {
-      if (!selectedMerchantId) return { products: [], categories: [] };
-      let url = `/merchants/${selectedMerchantId}/products`;
-      if (selectedCategory !== "ALL") {
-        url += `?category=${encodeURIComponent(selectedCategory)}`;
-      }
-      const res = await api.get<any>(url);
-      return res.data || { products: [], categories: [] };
+  const localities = [
+    { label: "All Khammam", value: "ALL" },
+    { label: "Wyra Road", value: "Wyra Road" },
+    { label: "Mamata Hospital Road", value: "Mamata Hospital Road" },
+    { label: "Gandhi Chowk", value: "Gandhi Chowk" },
+    { label: "Bypass Road", value: "Bypass Road" },
+  ];
+
+  const categories = [
+    { title: "Hot Kitchens & Biryani", count: "12 Menus", icon: "🍛", href: "/categories?c=Restaurants" },
+    { title: "Kirana & Staples", count: "84 Items", icon: "🌾", href: "/categories?c=Groceries" },
+    { title: "Daily Dairy & Bakery", count: "28 Items", icon: "🥛", href: "/categories?c=Dairy" },
+    { title: "Fresh Fruits & Veggies", count: "45 Items", icon: "🥬", href: "/categories?c=Produce" },
+    { title: "Pharma & Wellness", count: "60 Essentials", icon: "💊", href: "/categories?c=Pharmacy" },
+    { title: "Traditional Sweets", count: "19 Delicacies", icon: "🍬", href: "/categories?c=Sweets" },
+  ];
+
+  // Map markers for verified stops in Khammam
+  const sampleMapStops = [
+    {
+      id: "shop-1",
+      name: "Bawarchi Biryani Central",
+      address: "Wyra Road, Beside Clock Tower, Khammam",
+      lat: 17.2472,
+      lng: 80.1514,
+      type: "PICKUP" as const,
+      status: "COMPLETED" as const,
+      locality: "Wyra Road"
     },
-    enabled: Boolean(selectedMerchantId),
-  });
-
-  const selectedMerchant = merchants.find((m: any) => m.id === selectedMerchantId);
-  const storeProducts = storeProductsData?.products || [];
-  const storeCategories = storeProductsData?.categories || [];
-
-  // Map Markers for Khammam Overview
-  const mapMarkers: MapMarkerItem[] = merchants.map((m: any) => ({
-    id: m.id,
-    lat: Number(m.latitude) || 17.2485,
-    lng: Number(m.longitude) || 80.153,
-    title: m.name,
-    description: `${m.address} · ${m.productCount || 0} items available`,
-    badge: m.locality,
-    type: "merchant",
-  }));
-
-  const getItemQuantityInCart = (productId: string) => {
-    const found = cartItems.find((i) => i.productId === productId);
-    return found ? found.quantity : 0;
-  };
+    {
+      id: "shop-2",
+      name: "Sri Balaji Supermarket",
+      address: "Near Bus Station Road, Khammam",
+      lat: 17.251,
+      lng: 80.158,
+      type: "PICKUP" as const,
+      status: "COMPLETED" as const,
+      locality: "Bus Stand Road"
+    },
+    {
+      id: "drop-1",
+      name: "Customer Drop-off (Ramesh)",
+      address: "Mamata General Hospital Quarters, Khammam",
+      lat: 17.2589,
+      lng: 80.1422,
+      type: "DROPOFF" as const,
+      status: "PENDING" as const,
+      locality: "Mamata Hospital"
+    },
+    {
+      id: "drop-2",
+      name: "Customer Drop-off (Priya)",
+      address: "Plot 42, Bank Colony, Khammam",
+      lat: 17.263,
+      lng: 80.165,
+      type: "DROPOFF" as const,
+      status: "PENDING" as const,
+      locality: "Bank Colony"
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFA] flex flex-col">
-      <Navbar />
-
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-8">
-        {/* Khammam Pilot Hero */}
-        <div className="bg-gradient-to-br from-[#0F766E] via-[#0d5f58] to-[#093f3a] rounded-3xl p-6 sm:p-10 text-white shadow-md relative overflow-hidden">
-          <div className="max-w-2xl relative z-10 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur-md border border-white/20">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>Khammam Pilot: Multi-Shop Shared Delivery</span>
-            </div>
-
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
-              Order from multiple Khammam shops in one delivery batch.
-            </h1>
-
-            <p className="text-sm sm:text-base text-teal-100 leading-relaxed">
-              Combine authentic biryani from <strong className="text-white">Bawarchi</strong>, daily staples from{" "}
-              <strong className="text-white">Balaji Kirana</strong>, and pure ghee sweets from{" "}
-              <strong className="text-white">Sri Krishna</strong>. One delivery rider collects all your items in a single trip.
-            </p>
-
-            {/* Search Bar */}
-            <div className="pt-2">
-              <div className="relative max-w-lg">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search biryani, atta, kaju katli, or shops in Khammam..."
-                  className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white text-neutral-900 text-sm placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-teal-400 shadow-lg"
-                />
+    <PublicLayout>
+      {/* SECTION 1: HERO SECTION */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-teal-900/10 via-[#F8FAFA] to-[#F8FAFA] pt-12 pb-20 border-b border-neutral-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Left Content Column */}
+            <div className="lg:col-span-7 space-y-6">
+              {/* Pilot Chip */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-100/80 border border-teal-300 text-teal-900 text-xs font-bold tracking-wide">
+                <span className="w-2 h-2 rounded-full bg-[#0F766E] animate-pulse" />
+                <span>Sector 01 Live · Khammam Municipal Corporation</span>
               </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Locality Quick Filters */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-          <span className="font-bold text-neutral-500 uppercase tracking-wider shrink-0 mr-1 text-[11px]">
-            Area:
-          </span>
-          {["ALL", "Khammam Central", "Wyra Road", "Mayuri Centre", "Station Road"].map((loc) => (
-            <button
-              key={loc}
-              onClick={() => setSelectedLocality(loc)}
-              className={`px-3 py-1.5 rounded-full font-semibold shrink-0 transition-colors cursor-pointer ${
-                selectedLocality === loc
-                  ? "bg-[#0F766E] text-white shadow-xs"
-                  : "bg-white text-neutral-700 hover:bg-neutral-100 border border-neutral-200"
-              }`}
-            >
-              {loc === "ALL" ? "All Khammam" : loc}
-            </button>
-          ))}
-        </div>
+              {/* Main Headline */}
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-neutral-950 tracking-tight leading-[1.12]">
+                Order from multiple Khammam shops. <br />
+                <span className="text-[#0F766E]">One single delivery.</span>
+              </h1>
 
-        {/* Section: Interactive Khammam Map & Local Shops */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* Left Column: Khammam Interactive Map */}
-          <div className="lg:col-span-1 bg-white p-4 rounded-2xl border border-neutral-200 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-sm text-neutral-900 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-teal-700" />
-                  Khammam Shop Locations
-                </h3>
-                <p className="text-[11px] text-neutral-500">
-                  3 active partner shops in pilot zone
-                </p>
-              </div>
-            </div>
+              {/* Subtitle */}
+              <p className="text-base sm:text-lg text-neutral-600 leading-relaxed max-w-2xl">
+                NationX coordinates neighbouring merchants into one shared delivery batch. Get Bawarchi biryani, fresh groceries from Sri Balaji, and essentials delivered together by a single verified partner.
+              </p>
 
-            <InteractiveMap
-              height="260px"
-              center={[17.2485, 80.153]}
-              zoom={14}
-              markers={mapMarkers}
-            />
+              {/* Live Locality Quick Filter & Search Bar */}
+              <div className="p-2 sm:p-3 bg-white rounded-2xl shadow-md border border-neutral-200/80 space-y-3">
+                <div className="flex flex-wrap gap-1.5 pb-2 border-b border-neutral-100">
+                  {localities.map((loc) => (
+                    <button
+                      key={loc.value}
+                      onClick={() => setSelectedLocality(loc.value)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors min-h-[36px] ${
+                        selectedLocality === loc.value
+                          ? "bg-[#0F766E] text-white"
+                          : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                      }`}
+                    >
+                      {loc.label}
+                    </button>
+                  ))}
+                </div>
 
-            <div className="text-[11px] text-neutral-500 flex items-start gap-1.5 bg-neutral-50 p-2.5 rounded-xl border border-neutral-100">
-              <Info className="w-3.5 h-3.5 text-teal-700 shrink-0 mt-0.5" />
-              <span>
-                Delivery partners are dispatched from Wyra Road and Station Road clusters to minimize delivery times.
-              </span>
-            </div>
-          </div>
-
-          {/* Right Column: Active Merchant Cards */}
-          <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-neutral-900">Partner Merchant Shops</h2>
-                <p className="text-xs text-neutral-500">
-                  Select a shop to explore products and add items to your shared basket
-                </p>
-              </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
-                {merchants.length} Shops Live
-              </span>
-            </div>
-
-            {isLoadingMerchants ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-44 rounded-2xl bg-white border border-neutral-200 animate-pulse p-4 space-y-3" />
-                ))}
-              </div>
-            ) : merchants.length === 0 ? (
-              <div className="p-8 text-center bg-white rounded-2xl border border-neutral-200 text-neutral-500">
-                <Store className="w-10 h-10 mx-auto text-neutral-300 mb-2 stroke-1" />
-                <p className="text-sm font-semibold">No merchants match your filter</p>
-                <p className="text-xs text-neutral-400 mt-1">Try selecting 'All Khammam' or clearing your search.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {merchants.map((merchant: any) => (
-                  <div
-                    key={merchant.id}
-                    className="bg-white rounded-2xl border border-neutral-200/90 p-5 shadow-2xs hover:border-[#0F766E] hover:shadow-md transition-all flex flex-col justify-between"
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                    <input
+                      type="text"
+                      placeholder="Search shops, dishes, groceries or medicines in Khammam..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 bg-neutral-50 rounded-xl text-sm font-medium border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-[#0F766E] focus:bg-white transition-all"
+                    />
+                  </div>
+                  <Link
+                    href={`/explore?q=${encodeURIComponent(searchQuery)}`}
+                    className="px-6 py-3 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] text-white text-sm font-bold shadow-xs flex items-center gap-2 transition-colors min-h-[48px]"
                   >
-                    <div className="space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200 mb-1">
-                            {merchant.locality}
-                          </div>
-                          <h3 className="font-extrabold text-base text-neutral-900">
-                            {merchant.name}
-                          </h3>
-                        </div>
-                        <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-lg shrink-0">
-                          <Store className="w-5 h-5" />
-                        </div>
-                      </div>
+                    <span>Find</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
 
-                      <p className="text-xs text-neutral-600 line-clamp-2 leading-relaxed">
-                        {merchant.address}
-                      </p>
+              {/* Live Network Pulse Metrics */}
+              <div className="grid grid-cols-3 gap-4 pt-2">
+                <div className="p-3.5 rounded-xl bg-white border border-neutral-200 shadow-2xs">
+                  <span className="text-2xl font-black text-neutral-900 block">3+</span>
+                  <span className="text-2xs font-semibold uppercase tracking-wider text-neutral-500">Active Outlets</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-white border border-neutral-200 shadow-2xs">
+                  <span className="text-2xl font-black text-[#0F766E] block">100%</span>
+                  <span className="text-2xs font-semibold uppercase tracking-wider text-neutral-500">POD Verified</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-white border border-neutral-200 shadow-2xs">
+                  <span className="text-2xl font-black text-neutral-900 block">₹0</span>
+                  <span className="text-2xs font-semibold uppercase tracking-wider text-neutral-500">Duplicate Fees</span>
+                </div>
+              </div>
+            </div>
 
-                      <div className="flex items-center gap-3 text-xs text-neutral-500 pt-1">
-                        <span className="font-semibold text-neutral-800">
-                          {merchant.productCount || 0} Products
-                        </span>
-                        <span>•</span>
-                        <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                          <ShieldCheck className="w-3.5 h-3.5" /> Verified Shop
-                        </span>
-                      </div>
-                    </div>
+            {/* Right Column: Interactive Shared-Batch Demonstration Card */}
+            <div className="lg:col-span-5">
+              <div className="bg-white rounded-3xl p-6 shadow-xl border border-neutral-200/90 relative">
+                <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-900">
+                      Live Coordinated Run #BAT-KHM-01
+                    </span>
+                  </div>
+                  <span className="text-3xs font-extrabold px-2 py-0.5 rounded-full bg-teal-50 text-[#0F766E] border border-teal-200">
+                    SHARED BATCH
+                  </span>
+                </div>
 
-                    <div className="pt-4 mt-2 border-t border-neutral-100 flex items-center justify-between">
-                      <span className="text-[11px] font-mono text-neutral-400 font-medium">
-                        {merchant.code}
-                      </span>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedMerchantId(merchant.id);
-                          setSelectedCategory("ALL");
-                        }}
-                        className="font-bold flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <span>Browse Shop</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </Button>
+                <div className="my-4">
+                  <RouteMap
+                    stops={sampleMapStops}
+                    batchId="BAT-KHM-01"
+                    status="ACTIVE"
+                    className="h-64 rounded-xl border border-neutral-200"
+                  />
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-neutral-50 border border-neutral-100">
+                    <Store className="w-4 h-4 text-teal-700 mt-0.5 shrink-0" />
+                    <div className="text-xs">
+                      <span className="font-bold text-neutral-900 block">Stop 1 & 2: Pickups at Wyra Road</span>
+                      <span className="text-neutral-500">Bawarchi (Biryani) + Sri Balaji (Household items)</span>
                     </div>
                   </div>
-                ))}
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-neutral-50 border border-neutral-100">
+                    <Truck className="w-4 h-4 text-emerald-700 mt-0.5 shrink-0" />
+                    <div className="text-xs">
+                      <span className="font-bold text-neutral-900 block">Stop 3 & 4: Coordinated Drop-offs</span>
+                      <span className="text-neutral-500">Mamata Hospital Quarters & Bank Colony</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center justify-between">
+                  <span className="text-xs text-neutral-500">Pilot efficiency score:</span>
+                  <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                    1 Rider · 2 Shops · 2 Customers
+                  </span>
+                </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
+      </section>
 
-        {/* Section: How Shared Delivery Works in Khammam */}
-        <div className="bg-white rounded-3xl border border-neutral-200 p-6 sm:p-8 space-y-6">
-          <div className="text-center max-w-xl mx-auto space-y-1">
-            <h2 className="text-lg sm:text-xl font-bold text-neutral-900">
-              How Khammam Shared Delivery Works
+      {/* SECTION 2: HOW SHARED DELIVERY WORKS */}
+      <section className="py-20 bg-white border-b border-neutral-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <span className="text-xs uppercase font-extrabold tracking-widest text-[#0F766E] block mb-2">
+              The Architecture
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight">
+              How NationX Shared Batching Works
             </h2>
-            <p className="text-xs text-neutral-500">
-              One delivery partner collects compatible orders from multiple shops in one route.
+            <p className="mt-3 text-base text-neutral-600">
+              Unlike legacy apps that dispatch a separate rider for every single order, NationX groups compatible orders into synchronized local batches.
             </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Step 1 */}
+            <div className="p-8 rounded-2xl bg-[#F8FAFA] border border-neutral-200 relative group hover:border-teal-400 transition-colors">
+              <div className="w-12 h-12 rounded-xl bg-[#0F766E] text-white flex items-center justify-center font-black text-xl mb-6 shadow-xs">
+                1
+              </div>
+              <h3 className="text-xl font-bold text-neutral-900 mb-2">
+                Multi-Store Cart
+              </h3>
+              <p className="text-sm text-neutral-600 leading-relaxed">
+                Add chicken biryani from Bawarchi and groceries from Sri Balaji in a single checkout. Each merchant prepares independently.
+              </p>
+              <div className="mt-6 flex items-center gap-2 text-xs font-bold text-[#0F766E]">
+                <span>Independent suborders preserved</span>
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="p-8 rounded-2xl bg-[#F8FAFA] border border-neutral-200 relative group hover:border-teal-400 transition-colors">
+              <div className="w-12 h-12 rounded-xl bg-teal-800 text-white flex items-center justify-center font-black text-xl mb-6 shadow-xs">
+                2
+              </div>
+              <h3 className="text-xl font-bold text-neutral-900 mb-2">
+                Intelligent Batching
+              </h3>
+              <p className="text-sm text-neutral-600 leading-relaxed">
+                Our engine combines compatible orders along Wyra Road into one optimal route. One delivery partner handles both pickups.
+              </p>
+              <div className="mt-6 flex items-center gap-2 text-xs font-bold text-teal-800">
+                <span>Zero dispatch holding delays</span>
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="p-8 rounded-2xl bg-[#F8FAFA] border border-neutral-200 relative group hover:border-teal-400 transition-colors">
+              <div className="w-12 h-12 rounded-xl bg-neutral-900 text-white flex items-center justify-center font-black text-xl mb-6 shadow-xs">
+                3
+              </div>
+              <h3 className="text-xl font-bold text-neutral-900 mb-2">
+                4-Digit PIN Handover
+              </h3>
+              <p className="text-sm text-neutral-600 leading-relaxed">
+                Rider delivers to your doorstep. Physical completion requires your secure 4-digit Proof of Delivery PIN. No fake delivery marks.
+              </p>
+              <div className="mt-6 flex items-center gap-2 text-xs font-bold text-neutral-900">
+                <span>Tamper-proof physical audit</span>
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 3: VERIFIED KHAMMAM SHOPS */}
+      <section className="py-20 bg-[#F8FAFA] border-b border-neutral-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
+            <div>
+              <span className="text-xs uppercase font-extrabold tracking-widest text-[#0F766E] block mb-2">
+                Verified Partners
+              </span>
+              <h2 className="text-3xl font-extrabold text-neutral-950 tracking-tight">
+                Featured Khammam Merchant Outlets
+              </h2>
+              <p className="mt-2 text-sm text-neutral-600">
+                Every merchant is verified with physical storefront inspection and live inventory tracking.
+              </p>
+            </div>
+            <Link
+              href="/explore"
+              className="inline-flex items-center gap-2 text-sm font-bold text-[#0F766E] hover:text-[#0D625C] min-h-[48px]"
+            >
+              <span>View all shops</span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {merchants.map((m: any) => (
+              <div
+                key={m.id}
+                className="bg-white rounded-2xl p-6 border border-neutral-200/90 shadow-2xs hover:shadow-md hover:border-teal-300 transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-teal-50 border border-teal-200 text-[#0F766E] flex items-center justify-center font-bold text-lg">
+                      <Store className="w-6 h-6" />
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-3xs font-extrabold uppercase">
+                      Ready for Orders
+                    </span>
+                  </div>
+
+                  <h3 className="text-lg font-bold text-neutral-900">{m.name}</h3>
+                  <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                    <span className="truncate">{m.address || m.locality || "Khammam"}</span>
+                  </p>
+
+                  <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-600">
+                    <span className="font-semibold text-teal-800">{m.locality || "Central Zone"}</span>
+                    <span>15–25 mins prep</span>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-neutral-100">
+                  <Link
+                    href={`/shops/${m.id}`}
+                    className="w-full py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-[#0F766E] text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+                  >
+                    <span>Browse Storefront</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 4: LOCAL COMMERCE CATEGORIES */}
+      <section className="py-20 bg-white border-b border-neutral-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <span className="text-xs uppercase font-extrabold tracking-widest text-[#0F766E] block mb-2">
+              Browse Categories
+            </span>
+            <h2 className="text-3xl font-extrabold text-neutral-950 tracking-tight">
+              Everything Khammam Has to Offer
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {categories.map((cat) => (
+              <Link
+                key={cat.title}
+                href={cat.href}
+                className="p-5 rounded-2xl bg-[#F8FAFA] border border-neutral-200 text-center hover:border-teal-400 hover:bg-teal-50/40 transition-all group flex flex-col items-center justify-center min-h-[140px]"
+              >
+                <span className="text-3xl mb-3 group-hover:scale-110 transition-transform">{cat.icon}</span>
+                <span className="text-xs font-bold text-neutral-900 block leading-tight">{cat.title}</span>
+                <span className="text-3xs text-neutral-500 font-semibold mt-1">{cat.count}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 5: LIVE PILOT COVERAGE IN KHAMMAM */}
+      <section className="py-20 bg-[#F8FAFA] border-b border-neutral-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <div className="lg:col-span-6 space-y-6">
+              <span className="text-xs uppercase font-extrabold tracking-widest text-[#0F766E] block">
+                Pilot Service Area
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight">
+                Covering Khammam&apos;s Core High-Density Corridors
+              </h2>
+              <p className="text-base text-neutral-600 leading-relaxed">
+                NationX is actively servicing orders across Wyra Road, Mamata Hospital Road, Railway Station Road, and Bypass Road. Our batching polygon is optimized for two-wheeler transport under Khammam traffic conditions.
+              </p>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-neutral-200">
+                  <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-xs">
+                    01
+                  </div>
+                  <div>
+                    <span className="text-sm font-bold text-neutral-900 block">Wyra Road Corridor</span>
+                    <span className="text-xs text-neutral-500">Commercial hub: Bawarchi, Kirana stores, bakeries</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-neutral-200">
+                  <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-xs">
+                    02
+                  </div>
+                  <div>
+                    <span className="text-sm font-bold text-neutral-900 block">Mamata Hospital Residential Belt</span>
+                    <span className="text-xs text-neutral-500">High-density drop-off destination</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-neutral-200">
+                  <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-xs">
+                    03
+                  </div>
+                  <div>
+                    <span className="text-sm font-bold text-neutral-900 block">Old Bus Depot & Gandhi Chowk</span>
+                    <span className="text-xs text-neutral-500">Wholesale staples and regional delicacies</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-6">
+              <div className="bg-white rounded-3xl p-6 border border-neutral-200 shadow-lg">
+                <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
+                  <div>
+                    <span className="text-xs font-bold text-neutral-900 block">Khammam Sector 01 Polygon</span>
+                    <span className="text-2xs text-neutral-500">Verified coordinates (17.2472°N, 80.1514°E)</span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-teal-50 text-[#0F766E] text-3xs font-bold">
+                    4.2 km Active Radius
+                  </span>
+                </div>
+                <div className="my-4">
+                  <RouteMap
+                    stops={sampleMapStops}
+                    batchId="KHM-SECTOR-01"
+                    status="ACTIVE"
+                    className="h-80 rounded-xl"
+                  />
+                </div>
+                <p className="text-2xs text-neutral-400 text-center">
+                  Live GPS simulation disabled per Project 03 rules. Markers reflect genuine geo-coordinates in Khammam.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 6: VALUE PROPOSITION (MERCHANT & PARTNER) */}
+      <section className="py-20 bg-white border-b border-neutral-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            {/* Merchant Card */}
+            <div className="p-8 sm:p-10 rounded-3xl bg-teal-950 text-white relative overflow-hidden flex flex-col justify-between">
+              <div className="space-y-4">
+                <span className="text-3xs font-extrabold uppercase tracking-widest text-teal-400">
+                  For Local Shopkeepers
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black tracking-tight">
+                  Reach customers without 30% aggregator commission.
+                </h3>
+                <p className="text-sm text-neutral-300 leading-relaxed">
+                  NationX coordinates dispatch so multiple shops share one rider. You keep your full retail margin, control your preparation timing, and mark orders ready when actually ready.
+                </p>
+                <ul className="space-y-2 text-xs text-neutral-200 pt-2">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-teal-400" />
+                    <span>Independent suborders — clear shop payouts</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-teal-400" />
+                    <span>Real-time inventory status with freshness controls</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-teal-400" />
+                    <span>Direct merchant portal with barcode/item readiness</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="mt-8 pt-6 border-t border-neutral-800">
+                <Link
+                  href="/register/shop"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#0F766E] hover:bg-[#115e59] text-white font-bold text-xs min-h-[48px]"
+                >
+                  <span>Onboard Your Khammam Shop</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Delivery Partner Card */}
+            <div className="p-8 sm:p-10 rounded-3xl bg-neutral-900 text-white relative overflow-hidden flex flex-col justify-between">
+              <div className="space-y-4">
+                <span className="text-3xs font-extrabold uppercase tracking-widest text-teal-400">
+                  For Delivery Partners
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black tracking-tight">
+                  Earn more per kilometre with batched runs.
+                </h3>
+                <p className="text-sm text-neutral-300 leading-relaxed">
+                  Stop driving back and forth for single deliveries. NationX shared batches bundle 2–3 pickups and drop-offs along your route, maximizing your earnings per trip.
+                </p>
+                <ul className="space-y-2 text-xs text-neutral-200 pt-2">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-teal-400" />
+                    <span>Higher pay per hour with multi-stop batching</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-teal-400" />
+                    <span>Secure 4-digit PIN customer verification protects you</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-teal-400" />
+                    <span>Transparent daily settlement records in app</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="mt-8 pt-6 border-t border-neutral-800">
+                <Link
+                  href="/register/partner"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#0F766E] hover:bg-[#115e59] text-white font-bold text-xs min-h-[48px]"
+                >
+                  <span>Join Khammam Delivery Fleet</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 7: TESTIMONIALS & PILOT STORIES */}
+      <section className="py-20 bg-[#F8FAFA] border-b border-neutral-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <span className="text-xs uppercase font-extrabold tracking-widest text-[#0F766E] block mb-2">
+              Community Feedback
+            </span>
+            <h2 className="text-3xl font-extrabold text-neutral-950 tracking-tight">
+              Trusted by Local Shops & Families
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-4 rounded-2xl bg-neutral-50/70 border border-neutral-200 space-y-2 text-center">
-              <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center mx-auto font-bold">
-                1
-              </div>
-              <h3 className="font-bold text-sm text-neutral-900">Multi-Shop Cart</h3>
-              <p className="text-xs text-neutral-600 leading-relaxed">
-                Add chicken biryani from Wyra Road and sweets from Station Road into one basket.
+            <div className="p-6 rounded-2xl bg-white border border-neutral-200 shadow-2xs">
+              <p className="text-sm text-neutral-600 leading-relaxed italic">
+                &ldquo;We used to lose customers who wanted groceries alongside our dinner orders. Now a single delivery partner picks up biryani and items from Balaji next door.&rdquo;
               </p>
+              <div className="mt-6 pt-4 border-t border-neutral-100 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-xs">
+                  BB
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-neutral-900 block">Bawarchi Restaurant</span>
+                  <span className="text-3xs text-neutral-500">Wyra Road, Khammam</span>
+                </div>
+              </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-neutral-50/70 border border-neutral-200 space-y-2 text-center">
-              <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center mx-auto font-bold">
-                2
-              </div>
-              <h3 className="font-bold text-sm text-neutral-900">Intelligent Batching</h3>
-              <p className="text-xs text-neutral-600 leading-relaxed">
-                The engine bundles compatible stops so riders do not make redundant cross-town trips.
+            <div className="p-6 rounded-2xl bg-white border border-neutral-200 shadow-2xs">
+              <p className="text-sm text-neutral-600 leading-relaxed italic">
+                &ldquo;I ordered lunch and weekly groceries in one transaction. It arrived in one bag run, and the PIN verification gave me confidence the order wasn&apos;t left at the wrong door.&rdquo;
               </p>
+              <div className="mt-6 pt-4 border-t border-neutral-100 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
+                  SK
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-neutral-900 block">Srinivas K.</span>
+                  <span className="text-3xs text-neutral-500">Mamata Hospital Quarters</span>
+                </div>
+              </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-neutral-50/70 border border-neutral-200 space-y-2 text-center">
-              <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center mx-auto font-bold">
-                3
-              </div>
-              <h3 className="font-bold text-sm text-neutral-900">POD Code Handover</h3>
-              <p className="text-xs text-neutral-600 leading-relaxed">
-                Verify drop-off with your 4-digit verification code. Delivery outcomes are physically audited.
+            <div className="p-6 rounded-2xl bg-white border border-neutral-200 shadow-2xs">
+              <p className="text-sm text-neutral-600 leading-relaxed italic">
+                &ldquo;With shared batches, my fuel costs dropped 35% because I deliver 2 orders in one cluster instead of riding 8 km across town twice.&rdquo;
               </p>
+              <div className="mt-6 pt-4 border-t border-neutral-100 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-neutral-900 text-white flex items-center justify-center font-bold text-xs">
+                  VR
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-neutral-900 block">Venkatesh R.</span>
+                  <span className="text-3xs text-neutral-500">Delivery Partner #01</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </main>
+      </section>
 
-      {/* Storefront Modal: Detailed Merchant Product Browser */}
-      {selectedMerchant && (
-        <Modal
-          isOpen={Boolean(selectedMerchantId)}
-          onClose={() => setSelectedMerchantId(null)}
-          title={selectedMerchant.name}
-          maxWidth="max-w-4xl"
-        >
-          <div className="space-y-5">
-            {/* Storefront Header */}
-            <div className="bg-teal-50 border border-teal-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="text-xs font-semibold text-teal-800">{selectedMerchant.locality}</div>
-                <div className="text-xs text-neutral-600 mt-0.5">{selectedMerchant.address}</div>
-              </div>
-              <div className="text-xs text-neutral-500 font-mono">
-                Shop Code: <span className="font-bold text-neutral-800">{selectedMerchant.code}</span>
-              </div>
-            </div>
-
-            {/* Category Filter Pills */}
-            {storeCategories.length > 0 && (
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-                <button
-                  onClick={() => setSelectedCategory("ALL")}
-                  className={`px-3 py-1.5 rounded-full font-semibold transition-colors cursor-pointer ${
-                    selectedCategory === "ALL"
-                      ? "bg-[#0F766E] text-white"
-                      : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
-                  }`}
-                >
-                  All Items ({storeProducts.length})
-                </button>
-                {storeCategories.map((cat: string) => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-3 py-1.5 rounded-full font-semibold transition-colors cursor-pointer shrink-0 ${
-                      selectedCategory === cat
-                        ? "bg-[#0F766E] text-white"
-                        : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Products Grid */}
-            {isLoadingProducts ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-8 text-center text-xs text-neutral-500 animate-pulse">
-                Loading shop products...
-              </div>
-            ) : storeProducts.length === 0 ? (
-              <div className="p-8 text-center text-neutral-500 text-xs">
-                No active products found in this category.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[480px] overflow-y-auto pr-1">
-                {storeProducts.map((prod: any) => {
-                  const qtyInCart = getItemQuantityInCart(prod.id);
-                  const isOutOfStock = prod.stockStatus === "OUT_OF_STOCK";
-                  const isCallToConfirm = prod.stockStatus === "CALL_TO_CONFIRM";
-
-                  return (
-                    <div
-                      key={prod.id}
-                      className="p-4 rounded-xl border border-neutral-200 bg-white hover:border-teal-600 transition-all flex flex-col justify-between gap-3 shadow-2xs"
-                    >
-                      <div className="space-y-1.5">
-                        <div className="flex items-start justify-between gap-2">
-                          <h4 className="font-bold text-sm text-neutral-900 leading-snug">
-                            {prod.name}
-                          </h4>
-                          {/* Stock Status Badge */}
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                              isOutOfStock
-                                ? "bg-red-100 text-red-800"
-                                : isCallToConfirm
-                                ? "bg-amber-100 text-amber-800"
-                                : "bg-emerald-100 text-emerald-800"
-                            }`}
-                          >
-                            {isOutOfStock
-                              ? "Out of Stock"
-                              : isCallToConfirm
-                              ? "Call to Confirm"
-                              : "In Stock"}
-                          </span>
-                        </div>
-
-                        <p className="text-xs text-neutral-500 line-clamp-2 leading-relaxed">
-                          {prod.description}
-                        </p>
-
-                        <div className="flex items-center gap-2 pt-1">
-                          {prod.handlingTag && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-neutral-100 text-neutral-700">
-                              {prod.handlingTag.replace("_", " ")}
-                            </span>
-                          )}
-                          <span className="text-[11px] text-neutral-400">
-                            {prod.category}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="pt-3 border-t border-neutral-100 flex items-center justify-between">
-                        <div className="text-base font-extrabold text-neutral-900">
-                          ₹{Number(prod.price).toFixed(2)}
-                        </div>
-
-                        {/* Add to Basket button or in-cart quantity indicator */}
-                        {isOutOfStock ? (
-                          <span className="text-xs font-semibold text-neutral-400">
-                            Unavailable
-                          </span>
-                        ) : qtyInCart > 0 ? (
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 text-teal-900 border border-teal-200 text-xs font-bold">
-                            <Check className="w-3.5 h-3.5 text-teal-700" />
-                            <span>{qtyInCart} in Basket</span>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() =>
-                              addItem({
-                                productId: prod.id,
-                                merchantId: selectedMerchant.id,
-                                merchantName: selectedMerchant.name,
-                                merchantLocality: selectedMerchant.locality,
-                                name: prod.name,
-                                price: Number(prod.price),
-                                handlingTag: prod.handlingTag,
-                              })
-                            }
-                            className="font-bold cursor-pointer"
-                          >
-                            + Add to Basket
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+      {/* SECTION 8: DUAL ONBOARDING CALL TO ACTION */}
+      <section className="py-20 bg-gradient-to-r from-teal-900 via-[#0F766E] to-teal-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
+          <div className="max-w-3xl mx-auto space-y-4">
+            <span className="px-3.5 py-1.5 rounded-full bg-teal-800/80 border border-teal-600 text-teal-200 text-xs font-bold uppercase tracking-wider inline-block">
+              Telangana Pilot Demonstration
+            </span>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight">
+              Experience the Future of Local Shared Logistics
+            </h2>
+            <p className="text-base sm:text-lg text-teal-100 max-w-2xl mx-auto">
+              Ready to explore? Discover verified merchants, test the multi-store checkout, or sign in to evaluate the merchant, rider, and admin dispatch portals.
+            </p>
           </div>
-        </Modal>
-      )}
 
-      {/* Cart Drawer */}
-      <CartDrawer onCheckout={() => setIsCheckoutOpen(true)} />
-
-      {/* Checkout Modal */}
-      <CheckoutModal
-        isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
-      />
-    </div>
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+            <Link
+              href="/explore"
+              className="px-8 py-3.5 rounded-xl bg-white text-[#0F766E] hover:bg-neutral-100 font-extrabold text-sm shadow-md transition-colors min-h-[48px] flex items-center gap-2"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span>Explore Marketplace</span>
+            </Link>
+            <Link
+              href="/login"
+              className="px-8 py-3.5 rounded-xl bg-teal-950/60 hover:bg-teal-950 border border-teal-500 text-white font-extrabold text-sm transition-colors min-h-[48px] flex items-center gap-2"
+            >
+              <Users className="w-4 h-4" />
+              <span>Sign In to Portals</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+    </PublicLayout>
   );
 }

@@ -4,9 +4,9 @@ import { withUserDb } from "@/lib/db";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { UpdateStopStatusInputSchema, UserRole } from "@nationx/shared";
 
-export async function POST(
+async function handleUpdateStopStatus(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  params: Promise<{ id: string }>
 ) {
   const auth = await requireAuth(req, [UserRole.PARTNER, UserRole.ADMIN]);
   if (auth.errorResponse) return auth.errorResponse;
@@ -15,7 +15,11 @@ export async function POST(
   const { id } = await params;
 
   try {
-    const body = await req.json();
+    const rawBody = await req.json();
+    const body = {
+      ...rawBody,
+      proofOfDeliveryCode: rawBody.proofOfDeliveryCode || rawBody.pod_code || rawBody.podCode,
+    };
     const parsed = UpdateStopStatusInputSchema.safeParse(body);
     if (!parsed.success) {
       return apiError("VALIDATION_ERROR", "Invalid stop status update payload", 400, parsed.error.format());
@@ -69,5 +73,13 @@ export async function POST(
     }
     return apiError("INTERNAL_SERVER_ERROR", err.message || "Failed to update stop status", 500);
   }
+}
+
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  return handleUpdateStopStatus(req, params);
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  return handleUpdateStopStatus(req, params);
 }
 

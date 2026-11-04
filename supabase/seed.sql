@@ -4,7 +4,8 @@
 TRUNCATE public.delivery_fees, public.delivery_events, public.delivery_stops,
          public.delivery_assignments, public.batch_orders, public.delivery_batches,
          public.order_items, public.merchant_suborders, public.orders,
-         public.delivery_partners, public.merchants, public.users, auth.users CASCADE;
+         public.delivery_partners, public.merchants, public.users, auth.users,
+         public.partner_settlements, public.service_localities, public.service_zones CASCADE;
 
 -- 1. Seed Auth Users
 INSERT INTO auth.users (id, email) VALUES
@@ -116,3 +117,28 @@ INSERT INTO public.notifications (
 ) VALUES
   ('70000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', 'ORDER_PLACED', 'Welcome to NationX Khammam', 'You can now browse local shops and combine items from Bawarchi Biryani, Balaji Kirana, and Sri Krishna Sweets in one shared delivery batch.', '/customer', '30000000-0000-0000-0000-000000000001', timezone('utc'::text, now()) - INTERVAL '2 hours')
 ON CONFLICT (id) DO NOTHING;
+
+-- 13. Seed Configurable Service Zones (Multi-City Scalability)
+INSERT INTO public.service_zones (
+  id, code, name, city, state, center_latitude, center_longitude, radius_km,
+  operating_hours_start, operating_hours_end, is_active, max_batch_orders, max_batch_capacity,
+  base_delivery_fee, per_km_fee, min_order_subtotal
+) VALUES
+  ('e0000000-0000-0000-0000-000000000001', 'ZONE_KHAMMAM_CENTRAL', 'Khammam Central Pilot Hub', 'Khammam', 'Telangana', 17.2485, 80.1530, 12.0, '06:00:00', '23:00:00', true, 4, 10, 35.00, 10.00, 50.00),
+  ('e0000000-0000-0000-0000-000000000002', 'ZONE_WARANGAL_URBAN', 'Warangal Urban Expansion Zone', 'Warangal', 'Telangana', 17.9689, 79.5941, 15.0, '07:00:00', '22:00:00', true, 5, 12, 40.00, 12.00, 100.00),
+  ('e0000000-0000-0000-0000-000000000003', 'ZONE_SURYAPET_TOWN', 'Suryapet Regional Hub', 'Suryapet', 'Telangana', 17.1439, 79.6239, 10.0, '07:00:00', '21:30:00', true, 3, 8, 30.00, 8.00, 50.00)
+ON CONFLICT (code) DO NOTHING;
+
+-- 14. Seed Service Localities
+INSERT INTO public.service_localities (
+  zone_id, name, code, latitude, longitude, is_active
+) VALUES
+  ('e0000000-0000-0000-0000-000000000001', 'Khammam Central', 'LOC_KHAMMAM_CENTRAL', 17.2485, 80.1530, true),
+  ('e0000000-0000-0000-0000-000000000001', 'Wyra Road', 'LOC_WYRA_ROAD', 17.2475, 80.1518, true),
+  ('e0000000-0000-0000-0000-000000000001', 'Mayuri Centre', 'LOC_MAYURI_CENTRE', 17.2450, 80.1480, true),
+  ('e0000000-0000-0000-0000-000000000001', 'Station Road', 'LOC_STATION_ROAD', 17.2510, 80.1575, true),
+  ('e0000000-0000-0000-0000-000000000001', 'Mamillagudem', 'LOC_MAMILLAGUDEM', 17.2600, 80.1600, true),
+  ('e0000000-0000-0000-0000-000000000002', 'Hanamkonda Main', 'LOC_HANAMKONDA', 17.9950, 79.5600, true),
+  ('e0000000-0000-0000-0000-000000000002', 'Kazipet Junction', 'LOC_KAZIPET', 17.9750, 79.5200, true),
+  ('e0000000-0000-0000-0000-000000000003', 'Suryapet Bus Stand', 'LOC_SURYAPET_BUS_STAND', 17.1420, 79.6200, true)
+ON CONFLICT (code) DO NOTHING;

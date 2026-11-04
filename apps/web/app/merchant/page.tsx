@@ -1,619 +1,327 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Navbar } from "@/components/ui/navbar";
-import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { Modal } from "@/components/ui/modal";
-import { Input } from "@/components/ui/input";
+import React, { useState } from "react";
+import Link from "next/link";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { 
+  Store, 
+  ClipboardList, 
+  PackageCheck, 
+  Clock, 
+  IndianRupee, 
+  ArrowRight, 
+  CheckCircle2, 
+  AlertCircle, 
+  Plus, 
+  Layers, 
+  Truck,
+  ChefHat,
+  ChevronRight,
+  Sparkles
+} from "lucide-react";
 import { useAuth } from "@/components/providers";
 import { api } from "@/lib/api-client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Store,
-  Clock,
-  ChefHat,
-  PackageCheck,
-  Truck,
-  RefreshCw,
-  AlertCircle,
-  CheckCircle2,
-  MapPin,
-  Plus,
-  Flame,
-  ShieldCheck,
-  Layers,
-  ArrowRight
-} from "lucide-react";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { MetricCardSkeleton } from "@/components/ui/skeleton";
 
-export default function MerchantPortalPage() {
+export default function MerchantDashboardOverviewPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-
-  const [activeTab, setActiveTab] = useState<"orders" | "catalog">("orders");
-  const [filterStatus, setFilterStatus] = useState<string>("ALL");
-  const [acceptingSuborder, setAcceptingSuborder] = useState<any | null>(null);
-  const [estimatedPrepMinutes, setEstimatedPrepMinutes] = useState<number>(20);
-  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  // New Product Form state
-  const [newProdName, setNewProdName] = useState("");
-  const [newProdCategory, setNewProdCategory] = useState("Specials");
-  const [newProdPrice, setNewProdPrice] = useState("180");
-  const [newProdHandling, setNewProdHandling] = useState("STANDARD");
-  const [newProdDesc, setNewProdDesc] = useState("");
-
-  // 1. Fetch Merchant Suborders Queue
-  const {
-    data: subordersData,
-    isLoading: isLoadingSuborders,
-    refetch: refetchSuborders,
-  } = useQuery({
-    queryKey: ["merchant-suborders"],
+  // 1. Fetch Merchant Suborders
+  const { data: subordersData, isLoading } = useQuery({
+    queryKey: ["merchant-dashboard-suborders"],
     queryFn: async () => {
       const res = await api.get<any>("/merchants/suborders");
-      const list = Array.isArray(res.data) ? res.data : res.data?.suborders || [];
-      return list.map((sub: any) => ({
-        id: sub.id,
-        suborderNumber: sub.suborderNumber || sub.suborder_number,
-        merchantId: sub.merchantId || sub.merchant_id,
-        status: sub.status,
-        subtotal: sub.subtotal,
-        deliveryLocality: sub.deliveryLocality || sub.delivery_locality,
-        deliveryAddress: sub.deliveryAddress || sub.delivery_address,
-        prepDeadline: sub.preparationDeadline || sub.preparation_deadline,
-        items: (sub.items || []).map((it: any) => ({
-          id: it.id,
-          productName: it.productName || it.product_name,
-          quantity: it.quantity,
-          unitPrice: it.unitPrice || it.unit_price,
-          handlingTag: it.handlingTag || it.handling_tag,
-        })),
-      }));
+      return res.data?.suborders || (Array.isArray(res.data) ? res.data : []);
     },
-    enabled: Boolean(user),
+    refetchInterval: 8000,
   });
-
-  useEffect(() => {
-    if (user?.id) {
-      refetchSuborders();
-    }
-  }, [user?.id, refetchSuborders]);
 
   const suborders = subordersData || [];
 
-  // Determine current merchant ID from first suborder or query
-  const merchantId = suborders[0]?.merchantId || "10000000-0000-0000-0000-000000000001";
-
-  // 2. Fetch Merchant Products Catalog
-  const {
-    data: productsData,
-    isLoading: isLoadingProducts,
-    refetch: refetchProducts,
-  } = useQuery({
-    queryKey: ["merchant-catalog", merchantId],
-    queryFn: async () => {
-      const res = await api.get<any>(`/merchants/${merchantId}/products`);
-      return res.data?.products || [];
-    },
-    enabled: Boolean(user && activeTab === "catalog"),
-  });
-
-  const products = productsData || [];
-
-  // Accept Suborder Mutation
+  // Mutations for quick actions
   const acceptMutation = useMutation({
-    mutationFn: async () => {
-      if (!acceptingSuborder) return;
-      setActionError(null);
-      setActionSuccess(null);
-      const res = await api.post(`/merchants/suborders/${acceptingSuborder.id}/accept`, {
-        preparationMinutes: estimatedPrepMinutes,
+    mutationFn: async (id: string) => {
+      const res = await api.post<any>(`/merchants/suborders/${id}/accept`, {
+        preparationMinutes: 20,
       });
-      if (!res.success) throw new Error(res.error?.message || "Failed to accept suborder");
       return res.data;
     },
     onSuccess: () => {
-      setActionSuccess(`Suborder accepted! Preparation timer set for ${estimatedPrepMinutes} mins.`);
-      setAcceptingSuborder(null);
-      queryClient.invalidateQueries({ queryKey: ["merchant-suborders"] });
+      setActionSuccess("Order accepted and marked for kitchen preparation.");
+      queryClient.invalidateQueries({ queryKey: ["merchant-dashboard-suborders"] });
+      setTimeout(() => setActionSuccess(null), 3000);
     },
-    onError: (err: any) => setActionError(err.message),
+    onError: (err: any) => {
+      setActionError(err.message || "Failed to accept order.");
+      setTimeout(() => setActionError(null), 4000);
+    },
   });
 
-  // Mark Ready Mutation
-  const markReadyMutation = useMutation({
-    mutationFn: async (suborderId: string) => {
-      setActionError(null);
-      setActionSuccess(null);
-      const res = await api.post(`/merchants/suborders/${suborderId}/ready`, {});
-      if (!res.success) throw new Error(res.error?.message || "Failed to mark ready");
+  const readyMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.post<any>(`/merchants/suborders/${id}/ready`, {});
       return res.data;
     },
     onSuccess: () => {
-      setActionSuccess("Suborder confirmed READY FOR PICKUP! Delivery partner notified.");
-      queryClient.invalidateQueries({ queryKey: ["merchant-suborders"] });
+      setActionSuccess("Order marked READY FOR PICKUP. Dispatch notified!");
+      queryClient.invalidateQueries({ queryKey: ["merchant-dashboard-suborders"] });
+      setTimeout(() => setActionSuccess(null), 3000);
     },
-    onError: (err: any) => setActionError(err.message),
+    onError: (err: any) => {
+      setActionError(err.message || "Failed to mark order ready.");
+      setTimeout(() => setActionError(null), 4000);
+    },
   });
 
-  // Confirm Handover Mutation
-  const confirmHandoverMutation = useMutation({
-    mutationFn: async (suborderId: string) => {
-      setActionError(null);
-      setActionSuccess(null);
-      const res = await api.post(`/merchants/suborders/${suborderId}/handover`, {});
-      if (!res.success) throw new Error(res.error?.message || "Failed to confirm handover");
-      return res.data;
-    },
-    onSuccess: () => {
-      setActionSuccess("Physical handover confirmed to assigned delivery partner!");
-      queryClient.invalidateQueries({ queryKey: ["merchant-suborders"] });
-    },
-    onError: (err: any) => setActionError(err.message),
-  });
-
-  // Add Product Mutation
-  const addProductMutation = useMutation({
-    mutationFn: async () => {
-      setActionError(null);
-      setActionSuccess(null);
-      const res = await api.post(`/merchants/${merchantId}/products`, {
-        name: newProdName.trim(),
-        description: newProdDesc.trim() || undefined,
-        category: newProdCategory.trim(),
-        price: parseFloat(newProdPrice),
-        handlingTag: newProdHandling,
-        stockStatus: "IN_STOCK",
-        isActive: true,
-      });
-      if (!res.success) throw new Error(res.error?.message || "Failed to add product");
-      return res.data;
-    },
-    onSuccess: () => {
-      setActionSuccess(`Product "${newProdName}" published to Khammam catalogue!`);
-      setIsAddProductOpen(false);
-      setNewProdName("");
-      setNewProdDesc("");
-      queryClient.invalidateQueries({ queryKey: ["merchant-catalog"] });
-    },
-    onError: (err: any) => setActionError(err.message),
-  });
-
-  const filteredSuborders = suborders.filter((s: any) =>
-    filterStatus === "ALL" ? true : s.status === filterStatus
-  );
+  // Calculate Metrics
+  const pendingOrders = suborders.filter((s: any) => ["PLACED", "PENDING"].includes(s.status));
+  const preparingOrders = suborders.filter((s: any) => ["ACCEPTED", "PREPARING"].includes(s.status));
+  const readyOrders = suborders.filter((s: any) => s.status === "READY_FOR_PICKUP");
+  const completedOrders = suborders.filter((s: any) => ["PICKED_UP", "DELIVERED"].includes(s.status));
+  const todayRevenue = suborders.reduce((sum: number, s: any) => sum + (Number(s.subtotal) || 0), 0);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFA] flex flex-col">
-      <Navbar />
-
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
-        {/* Header */}
-        <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-bold text-neutral-900">
-                Merchant Kitchen & Shop Portal
-              </h1>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
-                Khammam Operations
-              </span>
-            </div>
-            <p className="text-xs text-neutral-500 mt-1">
-              Logged in as: <strong className="text-neutral-800">{user?.full_name}</strong> ({user?.email})
-            </p>
-          </div>
-
+    <div className="space-y-8">
+      {/* Header Banner */}
+      <div className="p-6 sm:p-8 rounded-3xl bg-white border border-neutral-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                refetchSuborders();
-                refetchProducts();
-              }}
-              className="text-xs cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5 mr-1" /> Refresh
-            </Button>
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-3xs font-extrabold uppercase tracking-widest text-[#0F766E]">
+              Khammam Central Pilot Outpost
+            </span>
           </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-neutral-950 tracking-tight">
+            {user?.full_name || "Merchant Store Operations"}
+          </h1>
+          <p className="text-xs sm:text-sm text-neutral-600">
+            Accept incoming orders, manage kitchen preparation timers, and stage packages for rider pickup.
+          </p>
         </div>
 
-        {/* Global Feedback Banners */}
-        {actionSuccess && (
-          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
-            <span className="font-semibold">{actionSuccess}</span>
-            <button onClick={() => setActionSuccess(null)} className="text-xs font-bold hover:underline">
-              Dismiss
-            </button>
-          </div>
-        )}
-        {actionError && (
-          <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center justify-between">
-            <span className="font-semibold">{actionError}</span>
-            <button onClick={() => setActionError(null)} className="text-xs font-bold hover:underline">
-              Dismiss
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/merchant/orders"
+            className="px-5 py-3 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] text-white text-xs font-bold transition-colors flex items-center gap-2 min-h-[48px] shadow-xs"
+          >
+            <ClipboardList className="w-4 h-4" />
+            <span>Orders Queue ({pendingOrders.length + preparingOrders.length})</span>
+          </Link>
+          <Link
+            href="/merchant/products/new"
+            className="px-4 py-3 rounded-xl border border-neutral-300 hover:bg-neutral-100 text-neutral-800 text-xs font-bold transition-colors min-h-[48px] flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Item</span>
+          </Link>
+        </div>
+      </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex gap-2 border-b border-neutral-200 pb-2">
-          <button
-            onClick={() => setActiveTab("orders")}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer ${
-              activeTab === "orders"
-                ? "bg-[#0F766E] text-white shadow-2xs"
-                : "bg-white text-neutral-700 hover:bg-neutral-100 border border-neutral-200"
-            }`}
-          >
-            Suborder Queue ({suborders.length})
-          </button>
-          <button
-            onClick={() => setActiveTab("catalog")}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer ${
-              activeTab === "catalog"
-                ? "bg-[#0F766E] text-white shadow-2xs"
-                : "bg-white text-neutral-700 hover:bg-neutral-100 border border-neutral-200"
-            }`}
-          >
-            Shop Inventory & Catalogue
-          </button>
+      {actionSuccess && (
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4" />
+          <span>{actionSuccess}</span>
+        </div>
+      )}
+
+      {actionError && (
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
+          <AlertCircle className="w-4 h-4" />
+          <span>{actionError}</span>
+        </div>
+      )}
+
+      {/* Operational Metric Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="p-5 rounded-2xl bg-white border border-neutral-200 shadow-2xs">
+          <div className="flex items-center justify-between text-neutral-500 mb-2">
+            <span className="text-3xs uppercase font-extrabold tracking-wider">Awaiting Accept</span>
+            <Clock className="w-4 h-4 text-amber-600" />
+          </div>
+          <span className="text-3xl font-black text-neutral-950 block">{pendingOrders.length}</span>
+          <span className="text-3xs text-neutral-400 mt-1 block">Immediate action needed</span>
         </div>
 
-        {/* TAB 1: SUBORDERS QUEUE */}
-        {activeTab === "orders" && (
-          <div className="space-y-4">
-            {/* Filter Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-              <span className="font-bold text-neutral-500 uppercase tracking-wider text-[11px]">
-                Status:
-              </span>
-              {["ALL", "PLACED", "ACCEPTED", "READY_FOR_PICKUP", "PICKED_UP"].map((st) => (
-                <button
-                  key={st}
-                  onClick={() => setFilterStatus(st)}
-                  className={`px-3 py-1.5 rounded-full font-semibold shrink-0 transition-colors cursor-pointer ${
-                    filterStatus === st
-                      ? "bg-[#0F766E] text-white"
-                      : "bg-white text-neutral-700 hover:bg-neutral-100 border border-neutral-200"
-                  }`}
-                >
-                  {st.replace(/_/g, " ")}
-                </button>
-              ))}
-            </div>
-
-            {isLoadingSuborders ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-44 bg-white rounded-2xl border border-neutral-200 animate-pulse" />
-                ))}
-              </div>
-            ) : filteredSuborders.length === 0 ? (
-              <div className="p-12 text-center bg-white rounded-2xl border border-neutral-200 text-neutral-500">
-                <Store className="w-12 h-12 mx-auto text-neutral-300 mb-2 stroke-1" />
-                <p className="text-sm font-semibold">No suborders in this queue.</p>
-                <p className="text-xs text-neutral-400 mt-1">
-                  Incoming shared-delivery orders will appear here for kitchen acceptance.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredSuborders.map((sub: any) => {
-                  const isPlaced = sub.status === "PLACED";
-                  const isAccepted = sub.status === "ACCEPTED";
-                  const isReady = sub.status === "READY_FOR_PICKUP";
-                  const isPickedUp = sub.status === "PICKED_UP";
-
-                  return (
-                    <div
-                      key={sub.id}
-                      className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-2xs flex flex-col justify-between space-y-4"
-                    >
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="font-extrabold text-sm text-neutral-900">
-                            #{sub.suborderNumber}
-                          </span>
-                          <StatusBadge status={sub.status} />
-                        </div>
-
-                        {/* Customer Locality */}
-                        <div className="flex items-center gap-1.5 text-xs text-neutral-600">
-                          <MapPin className="w-3.5 h-3.5 text-teal-700 shrink-0" />
-                          <span className="truncate">{sub.deliveryAddress}</span>
-                        </div>
-
-                        {/* Items Checklist */}
-                        <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-100 space-y-1.5">
-                          <div className="text-[11px] font-bold text-neutral-700 uppercase tracking-wider">
-                            Preparation Items:
-                          </div>
-                          {sub.items.map((it: any) => (
-                            <div key={it.id} className="flex justify-between text-xs text-neutral-800">
-                              <span className="font-semibold">
-                                {it.quantity}x {it.productName}
-                              </span>
-                              {it.handlingTag && (
-                                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-neutral-200 font-bold">
-                                  {it.handlingTag}
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                          <div className="pt-2 border-t border-neutral-200 flex justify-between text-xs font-bold text-neutral-900">
-                            <span>Subtotal</span>
-                            <span>₹{Number(sub.subtotal).toFixed(2)}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* State Transition Actions */}
-                      <div className="pt-2 border-t border-neutral-100">
-                        {isPlaced && (
-                          <Button
-                            variant="primary"
-                            className="w-full text-xs font-bold py-2.5 flex items-center justify-center gap-1.5"
-                            onClick={() => setAcceptingSuborder(sub)}
-                          >
-                            <ChefHat className="w-4 h-4" />
-                            Accept & Set Prep Time
-                          </Button>
-                        )}
-
-                        {isAccepted && (
-                          <Button
-                            variant="primary"
-                            className="w-full text-xs font-bold py-2.5 bg-emerald-700 hover:bg-emerald-800 flex items-center justify-center gap-1.5"
-                            onClick={() => markReadyMutation.mutate(sub.id)}
-                            disabled={markReadyMutation.isPending}
-                          >
-                            <PackageCheck className="w-4 h-4" />
-                            Mark Ready for Pickup
-                          </Button>
-                        )}
-
-                        {isReady && (
-                          <Button
-                            variant="primary"
-                            className="w-full text-xs font-bold py-2.5 bg-indigo-700 hover:bg-indigo-800 flex items-center justify-center gap-1.5"
-                            onClick={() => confirmHandoverMutation.mutate(sub.id)}
-                            disabled={confirmHandoverMutation.isPending}
-                          >
-                            <Truck className="w-4 h-4" />
-                            Confirm Handover to Rider
-                          </Button>
-                        )}
-
-                        {isPickedUp && (
-                          <div className="p-2 text-center text-xs font-bold text-emerald-800 bg-emerald-50 rounded-xl border border-emerald-200">
-                            ✓ Handed over to Delivery Partner
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+        <div className="p-5 rounded-2xl bg-white border border-neutral-200 shadow-2xs">
+          <div className="flex items-center justify-between text-neutral-500 mb-2">
+            <span className="text-3xs uppercase font-extrabold tracking-wider">In Preparation</span>
+            <ChefHat className="w-4 h-4 text-teal-600" />
           </div>
-        )}
+          <span className="text-3xl font-black text-teal-800 block">{preparingOrders.length}</span>
+          <span className="text-3xs text-neutral-400 mt-1 block">Cooking & packing</span>
+        </div>
 
-        {/* TAB 2: SHOP INVENTORY & CATALOGUE */}
-        {activeTab === "catalog" && (
-          <div className="bg-white rounded-2xl border border-neutral-200 p-6 space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-neutral-100">
-              <div>
-                <h2 className="text-base font-bold text-neutral-900">
-                  Shop Products & Stock Status
-                </h2>
-                <p className="text-xs text-neutral-500">
-                  Manage product availability and publish items to the Khammam marketplace.
-                </p>
-              </div>
+        <div className="p-5 rounded-2xl bg-white border border-neutral-200 shadow-2xs">
+          <div className="flex items-center justify-between text-neutral-500 mb-2">
+            <span className="text-3xs uppercase font-extrabold tracking-wider">Ready for Rider</span>
+            <PackageCheck className="w-4 h-4 text-emerald-600" />
+          </div>
+          <span className="text-3xl font-black text-emerald-700 block">{readyOrders.length}</span>
+          <span className="text-3xs text-neutral-400 mt-1 block">Staged at pickup desk</span>
+        </div>
 
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setIsAddProductOpen(true)}
-                className="font-bold flex items-center gap-1.5"
+        <div className="p-5 rounded-2xl bg-white border border-neutral-200 shadow-2xs">
+          <div className="flex items-center justify-between text-neutral-500 mb-2">
+            <span className="text-3xs uppercase font-extrabold tracking-wider">Today&apos;s Revenue</span>
+            <IndianRupee className="w-4 h-4 text-neutral-800" />
+          </div>
+          <span className="text-3xl font-black text-neutral-950 block">₹{todayRevenue.toFixed(2)}</span>
+          <span className="text-3xs text-emerald-700 font-bold mt-1 block">{completedOrders.length} completed</span>
+        </div>
+      </div>
+
+      {/* Urgent Action Queue: Needs Kitchen Attention */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+            <h2 className="text-lg font-black text-neutral-950 tracking-tight">
+              Action Required Queue ({pendingOrders.length + preparingOrders.length})
+            </h2>
+          </div>
+          <Link
+            href="/merchant/orders"
+            className="text-xs font-bold text-[#0F766E] hover:underline flex items-center gap-1"
+          >
+            <span>View All Queue</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {isLoading ? (
+          <div className="p-8 rounded-2xl bg-white border border-neutral-200 animate-pulse h-36" />
+        ) : pendingOrders.length === 0 && preparingOrders.length === 0 ? (
+          <div className="p-8 text-center bg-white rounded-2xl border border-neutral-200">
+            <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto mb-2" />
+            <span className="text-sm font-bold text-neutral-900 block">Kitchen Queue is Clear</span>
+            <p className="text-xs text-neutral-500 mt-1">All incoming suborders have been processed or staged for pickup.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Pending acceptance */}
+            {pendingOrders.map((so: any) => (
+              <div
+                key={so.id}
+                className="p-5 rounded-2xl bg-white border border-amber-300 shadow-2xs space-y-4"
               >
-                <Plus className="w-4 h-4" />
-                Add Product
-              </Button>
-            </div>
-
-            {isLoadingProducts ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-32 bg-neutral-50 rounded-xl border border-neutral-200 animate-pulse" />
-                ))}
-              </div>
-            ) : products.length === 0 ? (
-              <div className="p-12 text-center text-neutral-500">
-                <Store className="w-10 h-10 mx-auto text-neutral-300 mb-2 stroke-1" />
-                <p className="text-xs font-semibold">No products found for this shop.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {products.map((p: any) => (
-                  <div
-                    key={p.id}
-                    className="p-4 rounded-xl border border-neutral-200 bg-neutral-50/50 space-y-2 flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="font-bold text-sm text-neutral-900">{p.name}</span>
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            p.stockStatus === "IN_STOCK"
-                              ? "bg-emerald-100 text-emerald-800"
-                              : p.stockStatus === "CALL_TO_CONFIRM"
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {p.stockStatus.replace(/_/g, " ")}
-                        </span>
-                      </div>
-                      <p className="text-xs text-neutral-500 line-clamp-2 mt-1">
-                        {p.description || "Fresh preparation in Khammam"}
-                      </p>
-                    </div>
-
-                    <div className="pt-2 border-t border-neutral-200 flex items-center justify-between text-xs">
-                      <span className="font-mono text-neutral-500">{p.category}</span>
-                      <span className="font-extrabold text-neutral-900 text-sm">
-                        ₹{Number(p.price).toFixed(2)}
-                      </span>
-                    </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <span className="text-3xs font-extrabold uppercase text-amber-800 bg-amber-50 px-2 py-0.5 rounded">
+                      New Suborder Request
+                    </span>
+                    <h3 className="text-sm font-black text-neutral-900 mt-1">
+                      Suborder #{so.id.slice(0, 8)}
+                    </h3>
                   </div>
-                ))}
+                  <span className="text-base font-black text-neutral-900">₹{Number(so.subtotal).toFixed(2)}</span>
+                </div>
+
+                <div className="space-y-1.5 text-xs text-neutral-600 bg-neutral-50 p-3 rounded-xl border border-neutral-100">
+                  <span className="font-bold text-neutral-900 block mb-1">Items to Prepare:</span>
+                  {so.items?.map((item: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between">
+                      <span>{item.quantity}x {item.product_name || item.name}</span>
+                      <span className="font-semibold text-neutral-800">₹{(Number(item.unit_price) * item.quantity).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => acceptMutation.mutate(so.id)}
+                    disabled={acceptMutation.isPending}
+                    className="w-full py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors min-h-[44px] flex items-center justify-center gap-1.5"
+                  >
+                    <ChefHat className="w-4 h-4" />
+                    <span>Accept & Begin Prep (20 mins)</span>
+                  </button>
+                </div>
               </div>
-            )}
+            ))}
+
+            {/* Currently preparing */}
+            {preparingOrders.map((so: any) => (
+              <div
+                key={so.id}
+                className="p-5 rounded-2xl bg-white border border-teal-200 shadow-2xs space-y-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <span className="text-3xs font-extrabold uppercase text-teal-800 bg-teal-50 px-2 py-0.5 rounded">
+                      In Kitchen Preparation
+                    </span>
+                    <h3 className="text-sm font-black text-neutral-900 mt-1">
+                      Suborder #{so.id.slice(0, 8)}
+                    </h3>
+                  </div>
+                  <span className="text-base font-black text-neutral-900">₹{Number(so.subtotal).toFixed(2)}</span>
+                </div>
+
+                <div className="space-y-1.5 text-xs text-neutral-600 bg-neutral-50 p-3 rounded-xl border border-neutral-100">
+                  <span className="font-bold text-neutral-900 block mb-1">Packing Items:</span>
+                  {so.items?.map((item: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between">
+                      <span>{item.quantity}x {item.product_name || item.name}</span>
+                      <span className="font-semibold text-neutral-800">₹{(Number(item.unit_price) * item.quantity).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => readyMutation.mutate(so.id)}
+                    disabled={readyMutation.isPending}
+                    className="w-full py-2.5 px-4 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] text-white text-xs font-bold transition-colors min-h-[44px] flex items-center justify-center gap-1.5"
+                  >
+                    <PackageCheck className="w-4 h-4" />
+                    <span>Confirm Packed & Mark Ready for Pickup</span>
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
-      </main>
+      </div>
 
-      {/* Accept Suborder Modal */}
-      {acceptingSuborder && (
-        <Modal
-          isOpen={Boolean(acceptingSuborder)}
-          onClose={() => setAcceptingSuborder(null)}
-          title={`Accept Suborder #${acceptingSuborder.suborderNumber}`}
-          maxWidth="max-w-md"
+      {/* Quick Navigation Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <Link
+          href="/merchant/products"
+          className="p-6 rounded-2xl bg-white border border-neutral-200 hover:border-teal-300 transition-all space-y-2 block"
         >
-          <div className="space-y-4">
-            <p className="text-xs text-neutral-600">
-              Confirm shop acceptance to prepare this suborder. Set the estimated kitchen preparation
-              time to help the dispatch coordinator schedule the delivery partner.
-            </p>
-
-            <div>
-              <label className="block text-xs font-bold text-neutral-800 mb-1">
-                Estimated Preparation Time (Minutes)
-              </label>
-              <div className="grid grid-cols-4 gap-2">
-                {[15, 20, 30, 45].map((mins) => (
-                  <button
-                    key={mins}
-                    type="button"
-                    onClick={() => setEstimatedPrepMinutes(mins)}
-                    className={`py-2 text-xs font-bold rounded-xl border transition-colors cursor-pointer ${
-                      estimatedPrepMinutes === mins
-                        ? "bg-teal-50 border-teal-600 text-teal-800"
-                        : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
-                    }`}
-                  >
-                    {mins}m
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-neutral-100">
-              <Button variant="ghost" onClick={() => setAcceptingSuborder(null)}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => acceptMutation.mutate()}
-                disabled={acceptMutation.isPending}
-              >
-                {acceptMutation.isPending ? "Accepting..." : "Confirm Acceptance"}
-              </Button>
-            </div>
+          <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#0F766E] flex items-center justify-center font-bold mb-3">
+            <Store className="w-5 h-5" />
           </div>
-        </Modal>
-      )}
+          <h3 className="text-sm font-bold text-neutral-900">Product Catalogue</h3>
+          <p className="text-xs text-neutral-500">Manage item pricing, images, and special handling instructions.</p>
+        </Link>
 
-      {/* Add Product Modal */}
-      {isAddProductOpen && (
-        <Modal
-          isOpen={isAddProductOpen}
-          onClose={() => setIsAddProductOpen(false)}
-          title="Publish New Product to Khammam Shop"
-          maxWidth="max-w-md"
+        <Link
+          href="/merchant/inventory"
+          className="p-6 rounded-2xl bg-white border border-neutral-200 hover:border-teal-300 transition-all space-y-2 block"
         >
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              addProductMutation.mutate();
-            }}
-            className="space-y-3"
-          >
-            <div>
-              <label className="block text-xs font-bold text-neutral-700 mb-1">Product Name *</label>
-              <Input
-                value={newProdName}
-                onChange={(e) => setNewProdName(e.target.value)}
-                placeholder="e.g. Special Dum Biryani / Fresh Atta 5kg"
-                required
-              />
-            </div>
+          <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#0F766E] flex items-center justify-center font-bold mb-3">
+            <Layers className="w-5 h-5" />
+          </div>
+          <h3 className="text-sm font-bold text-neutral-900">Stock & Freshness</h3>
+          <p className="text-xs text-neutral-500">Quickly toggle in-stock items or mark &quot;Call to confirm&quot; to prevent cancellation.</p>
+        </Link>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-xs font-bold text-neutral-700 mb-1">Category *</label>
-                <Input
-                  value={newProdCategory}
-                  onChange={(e) => setNewProdCategory(e.target.value)}
-                  placeholder="e.g. Biryani & Rice"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-neutral-700 mb-1">Price (₹ INR) *</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={newProdPrice}
-                  onChange={(e) => setNewProdPrice(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-neutral-700 mb-1">Handling Requirement</label>
-              <select
-                value={newProdHandling}
-                onChange={(e) => setNewProdHandling(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-xl bg-white"
-              >
-                <option value="STANDARD">Standard</option>
-                <option value="HOT_FOOD">Hot Food</option>
-                <option value="FRAGILE">Fragile</option>
-                <option value="PERISHABLE">Perishable</option>
-                <option value="HEAVY">Heavy</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-neutral-700 mb-1">Description</label>
-              <Input
-                value={newProdDesc}
-                onChange={(e) => setNewProdDesc(e.target.value)}
-                placeholder="Brief ingredients or preparation detail"
-              />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-3 border-t border-neutral-100">
-              <Button type="button" variant="ghost" onClick={() => setIsAddProductOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary" disabled={addProductMutation.isPending}>
-                {addProductMutation.isPending ? "Publishing..." : "Publish Product"}
-              </Button>
-            </div>
-          </form>
-        </Modal>
-      )}
+        <Link
+          href="/merchant/earnings"
+          className="p-6 rounded-2xl bg-white border border-neutral-200 hover:border-teal-300 transition-all space-y-2 block"
+        >
+          <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#0F766E] flex items-center justify-center font-bold mb-3">
+            <IndianRupee className="w-5 h-5" />
+          </div>
+          <h3 className="text-sm font-bold text-neutral-900">Earnings & Payouts</h3>
+          <p className="text-xs text-neutral-500">Review completed suborder revenues and daily settlement ledgers.</p>
+        </Link>
+      </div>
     </div>
   );
 }

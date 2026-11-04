@@ -30,6 +30,14 @@ export async function GET(req: NextRequest) {
       if (batchId) {
         query += ` WHERE ds.batch_id = $1`;
         params.push(batchId);
+      } else if (user.role === UserRole.PARTNER) {
+        query += ` WHERE ds.batch_id IN (
+          SELECT da.batch_id 
+          FROM public.delivery_assignments da
+          JOIN public.delivery_partners dp ON da.partner_id = dp.id
+          WHERE dp.user_id = $1 AND da.status IN ('OFFERED', 'ACCEPTED')
+        )`;
+        params.push(user.id);
       }
 
       query += ` ORDER BY ds.batch_id, ds.sequence ASC`;

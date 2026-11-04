@@ -12,6 +12,7 @@ import {
   HandlingTag,
   StockStatus,
   NotificationType,
+  SettlementStatus,
 } from "./enums";
 
 export interface ApiResponse<T> {
@@ -211,5 +212,52 @@ export interface DeliveryEventDto {
   suborderId: string | null;
   batchId: string | null;
   metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface ServiceZoneDto {
+  id: string;
+  code: string;
+  name: string;
+  city: string;
+  state: string;
+  centerLatitude: number;
+  centerLongitude: number;
+  radiusKm: number;
+  operatingHoursStart: string;
+  operatingHoursEnd: string;
+  isActive: boolean;
+  maxBatchOrders: number;
+  maxBatchCapacity: number;
+  baseDeliveryFee: number;
+  perKmFee: number;
+  minOrderSubtotal: number;
+  localities?: ServiceLocalityDto[];
+  createdAt: string;
+}
+
+export interface ServiceLocalityDto {
+  id: string;
+  zoneId: string;
+  name: string;
+  code: string;
+  latitude: number | null;
+  longitude: number | null;
+  isActive: boolean;
+}
+
+export interface PartnerSettlementDto {
+  id: string;
+  partnerId: string;
+  batchId: string;
+  batchCode?: string;
+  basePayout: number;
+  stopAllowance: number;
+  distancePayout: number;
+  totalPayout: number;
+  stopsCompleted: number;
+  status: SettlementStatus;
+  settlementNotes: string;
+  disbursedAt: string | null;
   createdAt: string;
 }

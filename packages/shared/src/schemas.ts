@@ -123,3 +123,32 @@ export const AssignPartnerInputSchema = z.object({
   idempotencyKey: z.string().optional().nullable(),
 });
 
+export const ReassignPartnerInputSchema = z.object({
+  newPartnerId: z.string().uuid(),
+  reason: z.string().min(2).max(500),
+  idempotencyKey: z.string().optional().nullable(),
+});
+
+export const StopExceptionInputSchema = z.object({
+  reason: z.string().min(2).max(500),
+  createReturnStop: z.boolean().default(false),
+  idempotencyKey: z.string().optional().nullable(),
+});
+
+export const CancelOrderInputSchema = z.object({
+  reason: z.string().min(2).max(500),
+  idempotencyKey: z.string().optional().nullable(),
+});
+
+export const PartnerAvailabilityInputSchema = z.object({
+  availability: z.nativeEnum(PartnerAvailability),
+  currentLocality: z.string().optional(),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
+});
+
+export const ServiceZoneEligibilityQuerySchema = z.object({
+  latitude: z.coerce.number().min(-90).max(90),
+  longitude: z.coerce.number().min(-180).max(180),
+});
+

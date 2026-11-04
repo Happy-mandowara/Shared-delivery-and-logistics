@@ -44,10 +44,12 @@ class ApiClient {
 
   async request<T = any>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const headers = new Headers(options.headers || {});
-    headers.set("Content-Type", "application/json");
+    if (!headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
 
     const currentToken = this.getToken();
-    if (currentToken) {
+    if (currentToken && !headers.has("Authorization")) {
       headers.set("Authorization", `Bearer ${currentToken}`);
     }
 
@@ -76,33 +78,36 @@ class ApiClient {
     }
   }
 
-  async get<T = any>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { method: "GET" });
+  async get<T = any>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { method: "GET", ...options });
   }
 
-  async post<T = any>(endpoint: string, body?: any): Promise<ApiResponse<T>> {
+  async post<T = any>(endpoint: string, body?: any, options?: RequestInit): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: "POST",
       body: body ? JSON.stringify(body) : undefined,
+      ...options,
     });
   }
 
-  async patch<T = any>(endpoint: string, body?: any): Promise<ApiResponse<T>> {
+  async patch<T = any>(endpoint: string, body?: any, options?: RequestInit): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: "PATCH",
       body: body ? JSON.stringify(body) : undefined,
+      ...options,
     });
   }
 
-  async put<T = any>(endpoint: string, body?: any): Promise<ApiResponse<T>> {
+  async put<T = any>(endpoint: string, body?: any, options?: RequestInit): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: "PUT",
       body: body ? JSON.stringify(body) : undefined,
+      ...options,
     });
   }
 
-  async delete<T = any>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { method: "DELETE" });
+  async delete<T = any>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { method: "DELETE", ...options });
   }
 
   async login(email: string, password: string) {
@@ -129,4 +134,4 @@ class ApiClient {
 }
 
 export const api = new ApiClient();
-
+export const apiClient = api;

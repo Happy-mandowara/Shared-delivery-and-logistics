@@ -21,7 +21,10 @@ export async function GET(req: NextRequest) {
                m.address AS "merchantAddress", o.id AS "orderId", o.order_number AS "orderNumber",
                o.delivery_locality AS "deliveryLocality", o.delivery_address AS "deliveryAddress",
                o.delivery_window_start AS "deliveryWindowStart", o.delivery_window_end AS "deliveryWindowEnd",
-               o.dispatch_deadline AS "dispatchDeadline"
+               o.dispatch_deadline AS "dispatchDeadline",
+               coalesce((SELECT sum(oi.quantity) FROM public.order_items oi WHERE oi.suborder_id = ms.id), 1) AS "itemCount",
+               coalesce((SELECT sum(coalesce(oi.weight_units, 1.0) * oi.quantity) FROM public.order_items oi WHERE oi.suborder_id = ms.id), 1.0) AS "estimatedWeightUnits",
+               (SELECT array_agg(DISTINCT oi.handling_tag) FROM public.order_items oi WHERE oi.suborder_id = ms.id AND oi.handling_tag IS NOT NULL) AS "handlingTags"
         FROM public.merchant_suborders ms
         JOIN public.merchants m ON ms.merchant_id = m.id
         JOIN public.orders o ON ms.order_id = o.id
@@ -38,7 +41,8 @@ export async function GET(req: NextRequest) {
         params.push(`%${localityFilter}%`);
       }
 
-      query += ` ORDER BY o.delivery_window_end ASC NULLS LAST, ms.created_at ASC`;
+      // Prioritize ready orders and impending dispatch deadlines (never hold ready orders)
+      query += ` ORDER BY (ms.status = 'READY_FOR_PICKUP') DESC, o.dispatch_deadline ASC NULLS LAST, o.delivery_window_end ASC NULLS LAST, ms.created_at ASC`;
 
       const res = await client.query(query, params);
       return res.rows;

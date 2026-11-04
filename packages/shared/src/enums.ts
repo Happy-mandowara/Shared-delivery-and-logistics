@@ -121,3 +121,10 @@ export enum DeliveryEventType {
   NOTE = "NOTE",
 }
 
+export enum SettlementStatus {
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  DISBURSED = "DISBURSED",
+  ON_HOLD = "ON_HOLD",
+}
+
