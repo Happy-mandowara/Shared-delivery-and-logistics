@@ -56,7 +56,7 @@ export default function DesignSystemPreviewPage() {
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#0F766E]/10 dark:bg-[#34B8AB]/20 text-[#0F766E] dark:text-[#34B8AB] mb-3">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>NationX Design System 2.0 • Khammam Commerce Pilot</span>
+                <span>NationX Design System 2.0 • Khammam Commerce Network</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">
                 Design System Preview & Component Primitives
@@ -213,7 +213,7 @@ export default function DesignSystemPreviewPage() {
                   onChange={(e) => setCheckedTerms(e.target.checked)}
                 />
                 <Checkbox
-                  label="Cash on Delivery (Demo Mode)"
+                  label="Cash on Delivery"
                   description="Pay rider ₹480 cash with explicit OTP receipt"
                   checked={checkedCod}
                   onChange={(e) => setCheckedCod(e.target.checked)}

@@ -25,11 +25,17 @@ export default function CustomerDeliveryTrackingPage() {
   const params = useParams();
   const deliveryId = params?.deliveryId as string;
 
-  // 1. Fetch Batch or Order Details
-  const { data: batchData, isLoading } = useQuery({
+  // 1. Fetch Live Tracking Data via Authoritative Endpoint with 3-Second Reactive Sync
+  const { data: trackData, isLoading } = useQuery({
     queryKey: ["customer-delivery-tracking", deliveryId],
     queryFn: async () => {
-      // First try fetching batch, if not found fetch order
+      // First try dedicated order tracking endpoint
+      try {
+        const tRes = await api.get<any>(`/orders/${deliveryId}/track`);
+        if (tRes.data) return tRes.data;
+      } catch (e) {
+        // Fallback to batches or orders
+      }
       try {
         const bRes = await api.get<any>(`/batches/${deliveryId}`);
         if (bRes.data?.batch) return bRes.data.batch;
@@ -40,30 +46,31 @@ export default function CustomerDeliveryTrackingPage() {
       return oRes.data?.order || oRes.data || null;
     },
     enabled: Boolean(deliveryId),
-    refetchInterval: 10000, // Reactive polling without fake simulations
+    refetchInterval: 3000, // Real-time 3-second live telemetry synchronization
   });
 
-  const batch = batchData;
+  const batch = trackData;
+  const rider = trackData?.rider || trackData?.assignment?.partner || null;
 
   // Convert stops to map stops with strict Rule 9 Customer Privacy Masking
-  const stops = batch?.stops?.map((s: any) => {
+  const stops = (trackData?.stops || batch?.stops)?.map((s: any) => {
     const isPickup = s.type === "PICKUP";
-    const isCurrentUserStop = s.is_current_user || s.customer_id === batch?.customer_id;
+    const isCurrentUserStop = s.is_current_user || s.isCurrentCustomer || s.customer_id === batch?.customer_id;
 
     return {
       id: s.id,
       name: isPickup 
-        ? (s.merchant_name || "Merchant Shop")
+        ? (s.name || s.merchantName || s.merchant_name || "Merchant Shop")
         : isCurrentUserStop
           ? "Your Drop-off Location"
           : "Neighbourhood Stop (Masked for Privacy)",
       address: isPickup
-        ? (s.address || "Khammam Sector 01")
+        ? (s.address || "Khammam Corridor")
         : isCurrentUserStop
           ? (s.address || "Your Address")
           : "Wyra Road Corridor · PII Protected",
-      lat: Number(s.latitude) || 17.2472,
-      lng: Number(s.longitude) || 80.1514,
+      lat: Number(s.latitude || s.lat) || 17.2472,
+      lng: Number(s.longitude || s.lng) || 80.1514,
       type: s.type as "PICKUP" | "DROPOFF",
       status: s.status as "PENDING" | "COMPLETED" | "FAILED",
       locality: s.locality || "Wyra Road"
@@ -91,6 +98,8 @@ export default function CustomerDeliveryTrackingPage() {
     }
   ];
 
+  const podCode = trackData?.podCode || trackData?.pod_code || batch?.pod_code || null;
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
@@ -116,7 +125,7 @@ export default function CustomerDeliveryTrackingPage() {
       </div>
 
       {/* Handover PIN Card */}
-      {batch?.pod_code && (
+      {podCode && (
         <div className="p-6 rounded-3xl bg-teal-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
@@ -129,8 +138,45 @@ export default function CustomerDeliveryTrackingPage() {
           </div>
           <div className="bg-neutral-900 px-5 py-2.5 rounded-2xl border border-teal-500/40 text-center shrink-0">
             <span className="text-2xl sm:text-3xl font-black tracking-widest text-[#34B8AB]">
-              {batch.pod_code}
+              {podCode}
             </span>
+          </div>
+        </div>
+      )}
+
+      {/* Live Rider Banner if Assigned */}
+      {rider && (
+        <div className="p-4 rounded-2xl bg-white border border-teal-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-teal-50 border border-teal-200 text-[#0F766E] flex items-center justify-center font-bold text-xl shrink-0">
+              🛵
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-black text-neutral-950">{rider.name || "Delivery Partner"}</span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-3xs font-extrabold uppercase border border-emerald-200">
+                  En Route
+                </span>
+              </div>
+              <span className="text-xs text-neutral-500 block">
+                {rider.vehicleType ? `${rider.vehicleType.replace(/_/g, " ")}` : "Two Wheeler"} · {rider.locality || "Khammam Corridor"}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {rider.phone && (
+              <a
+                href={`tel:${rider.phone}`}
+                className="px-4 py-2 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5"
+              >
+                <PhoneCall className="w-3.5 h-3.5" />
+                <span>Call Partner</span>
+              </a>
+            )}
+            <div className="px-3 py-1.5 rounded-xl bg-neutral-100 text-neutral-700 text-3xs font-semibold">
+              Live GPS Synced
+            </div>
           </div>
         </div>
       )}
@@ -149,6 +195,7 @@ export default function CustomerDeliveryTrackingPage() {
 
         <RouteMap
           stops={stops}
+          rider={rider}
           batchId={deliveryId}
           status={batch?.status || "IN_TRANSIT"}
           className="h-80 rounded-2xl"

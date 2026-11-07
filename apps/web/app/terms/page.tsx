@@ -90,7 +90,7 @@ export default function TermsOfServicePage() {
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-neutral-950">5. Commercial Policy & Settlement Notice</h2>
             <p className="text-xs text-neutral-600 bg-neutral-50 p-4 rounded-xl border border-neutral-200">
-              <strong>Notice regarding Pilot Calculations:</strong> During the active pilot phase, delivery fee calculations, merchant commission tiers, and delivery partner compensation parameters are explicitly designated as <em>DEMO POLICY</em> until formal regulatory and commercial sign-off.
+              <strong>Notice regarding Commercial Calculations:</strong> Delivery fee calculations, merchant commission tiers, and delivery partner compensation parameters are designated as <em>DEMO POLICY</em> until formal commercial agreement.
             </p>
           </section>
 

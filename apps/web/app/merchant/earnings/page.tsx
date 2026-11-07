@@ -17,7 +17,7 @@ export default function MerchantEarningsPage() {
   const suborders = subordersData || [];
   const completedOrders = suborders.filter((s: any) => ["PICKED_UP", "DELIVERED"].includes(s.status));
   const grossSales = completedOrders.reduce((sum: number, s: any) => sum + (Number(s.subtotal) || 0), 0);
-  const netEarnings = grossSales; // 0% commission in pilot mode
+  const netEarnings = grossSales; // Zero platform commission
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -26,7 +26,7 @@ export default function MerchantEarningsPage() {
           Merchant Earnings & Settlements
         </h1>
         <p className="text-xs sm:text-sm text-neutral-600">
-          Financial reconciliation and daily bank transfer records for Khammam pilot operations.
+          Financial reconciliation and daily bank transfer records for Khammam store operations.
         </p>
       </div>
 
@@ -39,7 +39,7 @@ export default function MerchantEarningsPage() {
           </span>
         </div>
         <span className="text-3xs font-extrabold uppercase bg-amber-200/80 px-2 py-0.5 rounded text-amber-900">
-          PILOT TERMS
+          DEMO POLICY
         </span>
       </div>
 

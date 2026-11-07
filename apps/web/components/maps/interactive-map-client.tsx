@@ -66,7 +66,7 @@ export default function InteractiveMapClient({
       // Attribution control in small font
       L.control
         .attribution({ position: "bottomright", prefix: false })
-        .addAttribution("Khammam Pilot · OpenStreetMap")
+        .addAttribution("Khammam Network · OpenStreetMap")
         .addTo(map);
 
       markerGroupRef.current = L.layerGroup().addTo(map);

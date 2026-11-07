@@ -37,12 +37,12 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFA] text-[#1c1c1a]">
-      {/* 1. Global Pilot & Zone Announcement Bar */}
+      {/* 1. Global Announcement Bar */}
       <div className="bg-[#0B1514] text-white py-2 px-4 text-xs">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-medium tracking-wide">Live Pilot Hub:</span>
+            <span className="font-medium tracking-wide">Live Operations Hub:</span>
             <span className="text-neutral-300">Coordinated shared deliveries across Khammam Central & Wyra Road</span>
           </div>
           <div className="flex items-center gap-4 text-neutral-300">
@@ -235,7 +235,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       <footer className="bg-[#0B1514] text-white border-t border-neutral-800 pt-16 pb-12 mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-neutral-800">
-            {/* Col 1: Brand & Pilot Mission */}
+            {/* Col 1: Brand & Logistics Mission */}
             <div className="space-y-4 md:col-span-1">
               <div className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-xl bg-[#0F766E] flex items-center justify-center font-bold text-white text-lg">
@@ -250,7 +250,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               </p>
               <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 rounded-lg p-2.5">
                 <ShieldCheck className="w-4 h-4 shrink-0" />
-                <span>Khammam Central Pilot Operating Zone</span>
+                <span>Khammam Central Delivery Zone</span>
               </div>
             </div>
 

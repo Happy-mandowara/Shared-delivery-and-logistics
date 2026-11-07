@@ -77,44 +77,17 @@ export default function AboutPage() {
           </p>
         </div>
 
-        {/* Architecture & Engineering Integrity */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-black text-neutral-950">
-            Our Engineering Philosophy
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="p-6 rounded-2xl bg-[#F8FAFA] border border-neutral-200 space-y-2">
-              <span className="text-xs font-bold text-teal-800 block">PostgreSQL 16 SQL-First</span>
-              <p className="text-xs text-neutral-600 leading-relaxed">
-                No fragile ORM abstractions. State machine transitions are enforced by atomic PostgreSQL `SECURITY DEFINER` functions with strict RLS on every table.
-              </p>
-            </div>
-            <div className="p-6 rounded-2xl bg-[#F8FAFA] border border-neutral-200 space-y-2">
-              <span className="text-xs font-bold text-teal-800 block">No Fake Reality</span>
-              <p className="text-xs text-neutral-600 leading-relaxed">
-                We never fabricate live GPS coordinates, simulated bike icons, or fake delivery ETAs. We provide honest logistics timestamps and transparent audits.
-              </p>
-            </div>
-            <div className="p-6 rounded-2xl bg-[#F8FAFA] border border-neutral-200 space-y-2">
-              <span className="text-xs font-bold text-teal-800 block">Extreme High Contrast</span>
-              <p className="text-xs text-neutral-600 leading-relaxed">
-                Designed for low-end Android phones operating under intense South Indian sunlight. 48px minimum touch targets and clear readable typography.
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Contact Link */}
         <div className="p-8 rounded-3xl bg-neutral-900 text-white flex flex-col sm:flex-row items-center justify-between gap-6">
           <div>
-            <h3 className="text-xl font-bold">Have questions about the Khammam pilot?</h3>
-            <p className="text-xs text-neutral-400 mt-1">Get in touch with our operations team or explore partner opportunities.</p>
+            <h3 className="text-xl font-bold">Have questions about shared delivery in Khammam?</h3>
+            <p className="text-xs text-neutral-400 mt-1">Get in touch with our operations team or explore merchant and delivery partner opportunities.</p>
           </div>
           <Link
             href="/contact"
-            className="px-6 py-3 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] text-white text-xs font-bold transition-colors min-h-[48px] flex items-center gap-2 shrink-0"
+            className="px-6 py-3 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] text-white text-xs font-bold transition-colors min-h-[48px] flex items-center gap-2 shrink-0 shadow-xs"
           >
-            <span>Contact Pilot Team</span>
+            <span>Contact Operations Team</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

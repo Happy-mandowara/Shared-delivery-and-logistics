@@ -63,7 +63,16 @@ function LoginPageContent() {
   const [forgotMsg, setForgotMsg] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState<string>("Signing in...");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Eagerly prefetch dashboards so switching upon login is instantaneous
+  React.useEffect(() => {
+    router.prefetch("/admin");
+    router.prefetch("/merchant");
+    router.prefetch("/partner");
+    router.prefetch("/customer");
+  }, [router]);
 
   const demoPersonas = [
     {
@@ -115,12 +124,14 @@ function LoginPageContent() {
 
   const handleDemoLogin = async (personaEmail: string, targetRoute: string) => {
     setIsLoading(true);
+    setLoadingStatus("Authenticating and launching workspace...");
     setErrorMessage(null);
     const res = await login(personaEmail, "Password123!");
-    setIsLoading(false);
     if (res.success) {
+      setLoadingStatus("Opening your dashboard...");
       router.push(targetRoute);
     } else {
+      setIsLoading(false);
       setErrorMessage(res.error || "Login failed");
     }
   };
@@ -133,13 +144,15 @@ function LoginPageContent() {
       return;
     }
     setIsLoading(true);
+    setLoadingStatus("Verifying credentials...");
     setErrorMessage(null);
     const res = await login(cleanEmail, password);
-    setIsLoading(false);
     if (res.success) {
+      setLoadingStatus("Opening your dashboard...");
       const target = getTargetRouteForRole(res.user?.role);
       router.push(target);
     } else {
+      setIsLoading(false);
       setErrorMessage(res.error || "Invalid credentials. Please verify your email and password.");
     }
   };
@@ -371,8 +384,17 @@ function LoginPageContent() {
                 disabled={isLoading}
                 className="w-full py-3.5 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] disabled:bg-neutral-400 text-white text-xs font-black shadow-sm transition-colors flex items-center justify-center gap-2 min-h-[48px]"
               >
-                <span>{isLoading ? "Authenticating..." : "Sign In to Account"}</span>
-                <ArrowRight className="w-4 h-4" />
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>{loadingStatus}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Sign In to Account</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </form>
           )}
@@ -460,10 +482,10 @@ function LoginPageContent() {
             </Link>
           </div>
 
-          {/* Pilot Verification Access */}
+          {/* Authorized Directory Access */}
           <details className="pt-2 text-3xs text-neutral-400 group border-t border-neutral-100">
             <summary className="cursor-pointer hover:text-neutral-600 font-semibold list-none flex items-center justify-center gap-1">
-              <span>Pilot Verification Access</span>
+              <span>Authorized Access Directory</span>
             </summary>
             <div className="pt-3 space-y-1.5 text-neutral-500">
               <div className="flex justify-between p-2 rounded-lg bg-neutral-50 border border-neutral-100">

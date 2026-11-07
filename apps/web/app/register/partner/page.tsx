@@ -42,7 +42,13 @@ export default function RegisterPartnerPage() {
       });
 
       const data = await res.json();
-      if (res.ok && data.success) {
+      if (res.ok && (data.success || data.data?.partnerId)) {
+        const token = data.data?.token || data.token;
+        if (token && typeof window !== "undefined") {
+          localStorage.setItem("nationx_token", token);
+          document.cookie = `sb-access-token=${token}; path=/; max-age=604800; SameSite=Lax`;
+          document.cookie = `session=${token}; path=/; max-age=604800; SameSite=Lax`;
+        }
         setIsSubmitted(true);
       } else {
         setErrorMessage(data.error?.message || "Failed to submit partner application. Please try again.");
@@ -79,12 +85,19 @@ export default function RegisterPartnerPage() {
             <p className="text-sm text-neutral-600 max-w-md mx-auto">
               Welcome, <strong>{formData.fullName}</strong>. Our Khammam fleet supervisor will contact you at <strong>{formData.phone}</strong> for document verification and helmet/kit handover.
             </p>
-            <div className="pt-4 flex items-center justify-center gap-3">
+            <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href="/partner"
+                className="px-6 py-3 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] text-white text-xs font-bold min-h-[48px] inline-flex items-center gap-2 shadow-xs"
+              >
+                <span>Enter Partner Fleet Cockpit</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
               <Link
                 href="/login"
-                className="px-6 py-3 rounded-xl bg-[#0F766E] text-white text-xs font-bold min-h-[48px] inline-flex items-center"
+                className="px-6 py-3 rounded-xl border border-neutral-300 hover:bg-neutral-50 text-neutral-700 text-xs font-bold min-h-[48px] inline-flex items-center"
               >
-                Sign In to Partner Portal
+                Sign In Screen
               </Link>
             </div>
           </div>

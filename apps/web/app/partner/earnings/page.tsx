@@ -34,11 +34,11 @@ export default function PartnerEarningsPage() {
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-amber-700 shrink-0" />
           <span>
-            <strong>DEMO POLICY NOTICE:</strong> Pilot payout structure: Base trip pay ₹60 + ₹30 per additional merchant pickup + ₹30 per drop-off.
+            <strong>DEMO POLICY NOTICE:</strong> Payout structure: Base trip pay ₹60 + ₹30 per additional merchant pickup + ₹30 per drop-off.
           </span>
         </div>
         <span className="text-3xs font-extrabold uppercase bg-amber-200/80 px-2 py-0.5 rounded text-amber-900">
-          PILOT TERMS
+          DEMO POLICY
         </span>
       </div>
 

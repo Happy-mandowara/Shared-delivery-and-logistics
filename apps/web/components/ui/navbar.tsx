@@ -52,7 +52,7 @@ export function Navbar() {
     <header className="sticky top-0 z-40 bg-white border-b border-neutral-200/90 shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo & Pilot Tag */}
+          {/* Logo & Hub Tag */}
           <div className="flex items-center gap-2.5">
             <Link href="/" className="flex items-center gap-2 group min-h-[44px]">
               <div className="w-9 h-9 rounded-xl bg-[#0F766E] flex items-center justify-center text-white font-bold text-lg shadow-xs group-hover:bg-[#0D635D] transition-colors">
@@ -69,7 +69,7 @@ export function Navbar() {
             </Link>
             <span className="hidden lg:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-teal-50 text-[#0F766E] border border-teal-200">
               <MapPin className="w-3 h-3" />
-              Pilot Live
+              Khammam Active
             </span>
           </div>
 

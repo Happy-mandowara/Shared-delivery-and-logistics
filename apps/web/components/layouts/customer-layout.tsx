@@ -14,7 +14,8 @@ import {
   MapPin, 
   LogOut,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  Layers
 } from "lucide-react";
 import { useAuth } from "@/components/providers";
 import { useCart } from "@/components/cart-context";
@@ -46,6 +47,7 @@ export function CustomerLayout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { label: "Home", href: "/customer", icon: Home },
+    { label: "Categories", href: "/customer/categories", icon: Layers },
     { label: "Explore Shops", href: "/customer/explore", icon: Compass },
     { label: "Cart", href: "/customer/cart", icon: ShoppingBag, badge: itemCount > 0 ? itemCount : undefined },
     { label: "My Orders", href: "/customer/orders", icon: Package },
@@ -94,6 +96,7 @@ export function CustomerLayout({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={true}
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
                     active
                       ? "text-[#0F766E] bg-teal-50"
@@ -172,6 +175,7 @@ export function CustomerLayout({ children }: { children: React.ReactNode }) {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={true}
               className={`flex flex-col items-center justify-center py-1 px-3 rounded-lg text-2xs font-semibold ${
                 active ? "text-[#0F766E]" : "text-neutral-500 hover:text-neutral-900"
               }`}

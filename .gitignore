@@ -43,5 +43,9 @@ Thumbs.db
 *.tsbuildinfo
 next-env.d.ts
 
+# Uploads cache
+apps/web/public/uploads/*
+!apps/web/public/uploads/.gitkeep
+
 # Vercel
 .vercel

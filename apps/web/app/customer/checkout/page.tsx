@@ -300,7 +300,7 @@ export default function CustomerCheckoutPage() {
                   <CreditCard className="w-5 h-5 text-teal-700" />
                   <div>
                     <span className="text-xs font-bold text-neutral-900 block">UPI / Card</span>
-                    <span className="text-3xs text-neutral-500">Instant digital settlement (Demo)</span>
+                    <span className="text-3xs text-neutral-500">Instant digital settlement</span>
                   </div>
                 </div>
                 {paymentMethod === "ONLINE" && (

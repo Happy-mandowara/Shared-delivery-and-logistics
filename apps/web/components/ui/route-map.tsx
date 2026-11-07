@@ -17,6 +17,12 @@ export interface MapPoint {
 export interface RouteMapProps {
   points?: MapPoint[];
   stops?: any[];
+  rider?: {
+    latitude: number;
+    longitude: number;
+    name?: string;
+    vehicleType?: string;
+  } | null;
   batchId?: string;
   status?: string;
   center?: { latitude: number; longitude: number };
@@ -30,6 +36,7 @@ const KHAMMAM_CENTER: [number, number] = [17.2472, 80.1514];
 export function RouteMap({
   points = [],
   stops = [],
+  rider = null,
   batchId,
   status,
   center = { latitude: 17.2472, longitude: 80.1514 },
@@ -42,19 +49,38 @@ export function RouteMap({
   const markers: MapMarkerItem[] = rawItems.map((item: any, idx: number) => {
     const lat = Number(item.latitude || item.lat) || 17.2472;
     const lng = Number(item.longitude || item.lng) || 80.1514;
-    const isPickup = item.type === "PICKUP" || item.type === "MERCHANT";
+    const isPartner = item.type === "PARTNER" || item.type === "partner";
+    const isPickup = item.type === "PICKUP" || item.type === "MERCHANT" || item.type === "merchant";
+
+    let markerType: "pickup" | "dropoff" | "partner" = "dropoff";
+    if (isPartner) markerType = "partner";
+    else if (isPickup) markerType = "pickup";
 
     return {
       id: item.id || `marker-${idx}`,
       lat,
       lng,
-      title: item.title || item.name || (isPickup ? "Shop Handover" : "Customer Drop-off"),
+      title: item.title || item.name || (isPartner ? "Delivery Partner" : isPickup ? "Shop Handover" : "Customer Drop-off"),
       description: item.subtitle || item.address || item.locality || "Khammam Sector",
-      type: isPickup ? "pickup" : "dropoff",
+      type: markerType,
       sequenceNumber: item.sequence || idx + 1,
       status: item.status || "PENDING",
     };
   });
+
+  // Inject live rider if passed
+  if (rider && rider.latitude && rider.longitude) {
+    markers.push({
+      id: "rider-live-marker",
+      lat: Number(rider.latitude),
+      lng: Number(rider.longitude),
+      title: rider.name || "Delivery Partner",
+      description: `Live GPS position · ${rider.vehicleType || "Two Wheeler"}`,
+      badge: "Rider En Route",
+      type: "partner",
+      status: "IN_TRANSIT",
+    });
+  }
 
   const mapCenter: [number, number] = [center.latitude, center.longitude];
 

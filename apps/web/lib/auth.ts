@@ -93,18 +93,25 @@ export async function authenticateRequest(
     }
 
     // 2b. Check Supabase SSR session cookies via authoritative createSupabaseReqServerClient
+    // ONLY check if Supabase session cookies actually exist in the request
     if (!userId) {
-      try {
-        const sbClient = createSupabaseReqServerClient(req);
-        if (sbClient) {
-          const { data: { user: sbUser }, error: sbError } = await sbClient.auth.getUser();
-          if (sbUser && !sbError) {
-            userId = sbUser.id;
-            authenticatedSbUser = sbUser;
+      const allCookies = req.cookies.getAll();
+      const hasSbAuthCookie = allCookies.some(
+        (c) => (c.name.startsWith("sb-") && c.name.includes("auth-token")) || c.name === "supabase-auth-token"
+      );
+      if (hasSbAuthCookie) {
+        try {
+          const sbClient = createSupabaseReqServerClient(req);
+          if (sbClient) {
+            const { data: { user: sbUser }, error: sbError } = await sbClient.auth.getUser();
+            if (sbUser && !sbError) {
+              userId = sbUser.id;
+              authenticatedSbUser = sbUser;
+            }
           }
+        } catch {
+          // Fall through
         }
-      } catch {
-        // Fall through
       }
     }
   }

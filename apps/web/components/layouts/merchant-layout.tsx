@@ -3,19 +3,19 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { 
-  Store, 
-  ClipboardList, 
-  Package, 
-  Layers, 
-  Truck, 
-  CheckCircle2, 
-  DollarSign, 
-  Bell, 
-  Settings, 
-  Menu, 
-  X, 
-  LogOut, 
+import {
+  Store,
+  ClipboardList,
+  Package,
+  Layers,
+  Truck,
+  CheckCircle2,
+  DollarSign,
+  Bell,
+  Settings,
+  Menu,
+  X,
+  LogOut,
   Plus,
   Clock,
   ShieldCheck,
@@ -23,12 +23,24 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/components/providers";
 import { NotificationBell } from "@/components/notification-bell";
+import { api } from "@/lib/api-client";
 
 export function MerchantLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [merchant, setMerchant] = useState<{ name?: string; logoUrl?: string; locality?: string } | null>(null);
+
+  React.useEffect(() => {
+    if (user) {
+      api.get<any>("/merchants/me").then((res) => {
+        if (res.data?.merchant) {
+          setMerchant(res.data.merchant);
+        }
+      }).catch(() => {});
+    }
+  }, [user]);
 
   React.useEffect(() => {
     if (!isLoading) {
@@ -85,12 +97,27 @@ export function MerchantLayout({ children }: { children: React.ReactNode }) {
           </Link>
 
           {/* Active Store Chip */}
-          <div className="mt-4 p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-between">
-            <div className="truncate">
-              <span className="text-xs font-bold text-white block truncate">
-                {user?.full_name || "Merchant Shop"}
-              </span>
-              <span className="text-3xs text-neutral-400 block">Khammam Central Pilot</span>
+          <div className="mt-4 p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 truncate">
+              {merchant?.logoUrl ? (
+                <img
+                  src={merchant.logoUrl}
+                  alt={merchant.name || "Store"}
+                  className="w-8 h-8 rounded-lg object-cover border border-neutral-700 shrink-0"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-teal-900/60 border border-teal-700/50 flex items-center justify-center text-teal-300 font-bold text-xs shrink-0">
+                  <Store className="w-4 h-4" />
+                </div>
+              )}
+              <div className="truncate">
+                <span className="text-xs font-bold text-white block truncate">
+                  {merchant?.name || user?.full_name || "Merchant Shop"}
+                </span>
+                <span className="text-3xs text-neutral-400 block truncate">
+                  {merchant?.locality || "Khammam Central Corridor"}
+                </span>
+              </div>
             </div>
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0" title="Store Open" />
           </div>
@@ -104,11 +131,11 @@ export function MerchantLayout({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                  active
-                    ? "bg-[#0F766E] text-white shadow-xs"
-                    : "text-neutral-300 hover:text-white hover:bg-neutral-800/60"
-                }`}
+                prefetch={true}
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${active
+                  ? "bg-[#0F766E] text-white shadow-xs"
+                  : "text-neutral-300 hover:text-white hover:bg-neutral-800/60"
+                  }`}
               >
                 <item.icon className="w-4 h-4 shrink-0" />
                 <span>{item.label}</span>
@@ -177,10 +204,10 @@ export function MerchantLayout({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={true}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold ${
-                  active ? "bg-[#0F766E] text-white" : "text-neutral-300 hover:bg-neutral-800"
-                }`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold ${active ? "bg-[#0F766E] text-white" : "text-neutral-300 hover:bg-neutral-800"
+                  }`}
               >
                 <item.icon className="w-5 h-5" />
                 <span>{item.label}</span>

@@ -40,6 +40,15 @@ export default function MerchantDashboardOverviewPage() {
     refetchInterval: 8000,
   });
 
+  // 1b. Fetch Merchant Profile
+  const { data: merchantProfile } = useQuery({
+    queryKey: ["merchant-profile-me"],
+    queryFn: async () => {
+      const res = await api.get<any>("/merchants/me");
+      return res.data?.merchant || null;
+    },
+  });
+
   const suborders = subordersData || [];
 
   // Mutations for quick actions
@@ -88,19 +97,32 @@ export default function MerchantDashboardOverviewPage() {
     <div className="space-y-8">
       {/* Header Banner */}
       <div className="p-6 sm:p-8 rounded-3xl bg-white border border-neutral-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-3xs font-extrabold uppercase tracking-widest text-[#0F766E]">
-              Khammam Central Pilot Outpost
-            </span>
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-teal-50 border border-teal-200 text-[#0F766E] overflow-hidden flex items-center justify-center font-bold text-2xl shrink-0 shadow-xs">
+            {merchantProfile?.logoUrl ? (
+              <img
+                src={merchantProfile.logoUrl}
+                alt={merchantProfile.name || "Store"}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Store className="w-8 h-8" />
+            )}
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-neutral-950 tracking-tight">
-            {user?.full_name || "Merchant Store Operations"}
-          </h1>
-          <p className="text-xs sm:text-sm text-neutral-600">
-            Accept incoming orders, manage kitchen preparation timers, and stage packages for rider pickup.
-          </p>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-3xs font-extrabold uppercase tracking-widest text-[#0F766E]">
+                {merchantProfile?.locality || "Khammam Central Corridor"}
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-neutral-950 tracking-tight">
+              {merchantProfile?.name || user?.full_name || "Merchant Store Operations"}
+            </h1>
+            <p className="text-xs sm:text-sm text-neutral-600">
+              Accept incoming orders, manage kitchen preparation timers, and stage packages for rider pickup.
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { withUserDb } from "@/lib/db";
 import { apiSuccess, apiError } from "@/lib/api-response";
-import { CreateBatchInputSchema, UserRole } from "@nationx/shared";
+import { CreateBatchInputSchema, UserRole, calculateHaversineDistanceKm, estimateTravelDurationMin } from "@nationx/shared";
 
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req, [UserRole.ADMIN]);
@@ -107,7 +107,37 @@ export async function POST(req: NextRequest) {
         [locality, maxOrders, capacityUnits, suborderIds, idempotencyKey || null]
       );
 
-      return batchRes.rows[0].outcome;
+      const outcome = batchRes.rows[0].outcome;
+      const batchId = outcome?.batch_id || outcome?.id;
+
+      if (batchId) {
+        // Calculate and save authoritative route distance and duration estimates
+        const stopsRes = await client.query(
+          `SELECT latitude, longitude FROM public.delivery_stops WHERE batch_id = $1 ORDER BY sequence ASC`,
+          [batchId]
+        );
+        const stops = stopsRes.rows;
+        let totalDist = 0;
+        for (let i = 1; i < stops.length; i++) {
+          totalDist += calculateHaversineDistanceKm(
+            Number(stops[i - 1].latitude || 17.2472),
+            Number(stops[i - 1].longitude || 80.1514),
+            Number(stops[i].latitude || 17.2472),
+            Number(stops[i].longitude || 80.1514)
+          );
+        }
+        const estDist = Math.max(1.0, Math.round(totalDist * 10) / 10);
+        const estDur = estimateTravelDurationMin(estDist);
+
+        await client.query(
+          `UPDATE public.delivery_batches 
+           SET estimated_distance_km = $1, estimated_duration_min = $2, updated_at = NOW() 
+           WHERE id = $3`,
+          [estDist, estDur, batchId]
+        );
+      }
+
+      return outcome;
     });
 
     return apiSuccess(result, 201);

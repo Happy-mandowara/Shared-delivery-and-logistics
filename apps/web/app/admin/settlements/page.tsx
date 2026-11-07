@@ -32,11 +32,11 @@ export default function AdminSettlementsPage() {
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-amber-700 shrink-0" />
           <span>
-            <strong>DEMO POLICY NOTICE:</strong> Settlement ledger parameters are active in pilot demonstration mode. 100% merchant retention, ₹120 per multi-stop batch for riders.
+            <strong>DEMO POLICY NOTICE:</strong> Settlement ledger parameters are active in trial demonstration mode. 100% merchant retention, ₹120 per multi-stop batch for riders.
           </span>
         </div>
         <span className="text-3xs font-extrabold uppercase bg-amber-200/80 px-2 py-0.5 rounded text-amber-900">
-          PILOT RECONCILIATION
+          DEMO POLICY
         </span>
       </div>
 

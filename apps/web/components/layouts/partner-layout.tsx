@@ -116,6 +116,7 @@ export function PartnerLayout({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={true}
                 className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-colors min-h-[48px] ${
                   active
                     ? "bg-[#0F766E] text-white shadow-xs"
@@ -204,6 +205,7 @@ export function PartnerLayout({ children }: { children: React.ReactNode }) {
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={true}
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-neutral-800 min-h-[48px]"
                   >
@@ -238,6 +240,7 @@ export function PartnerLayout({ children }: { children: React.ReactNode }) {
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B1514] border-t border-neutral-800 px-2 py-1 flex items-center justify-around">
           <Link
             href="/partner"
+            prefetch={true}
             className={`flex flex-col items-center justify-center min-h-[48px] min-w-[48px] px-3 py-1 text-3xs font-semibold ${
               pathname === "/partner" ? "text-teal-400 font-bold" : "text-neutral-400 hover:text-neutral-200"
             }`}
@@ -247,6 +250,7 @@ export function PartnerLayout({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/partner/jobs"
+            prefetch={true}
             className={`flex flex-col items-center justify-center min-h-[48px] min-w-[48px] px-3 py-1 text-3xs font-semibold ${
               pathname === "/partner/jobs" ? "text-teal-400 font-bold" : "text-neutral-400 hover:text-neutral-200"
             }`}
@@ -256,6 +260,7 @@ export function PartnerLayout({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/partner/active-delivery"
+            prefetch={true}
             className={`flex flex-col items-center justify-center min-h-[48px] min-w-[48px] px-3 py-1 text-3xs font-semibold ${
               pathname === "/partner/active-delivery" ? "text-teal-400 font-bold" : "text-neutral-400 hover:text-neutral-200"
             }`}
@@ -265,6 +270,7 @@ export function PartnerLayout({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/partner/earnings"
+            prefetch={true}
             className={`flex flex-col items-center justify-center min-h-[48px] min-w-[48px] px-3 py-1 text-3xs font-semibold ${
               pathname === "/partner/earnings" ? "text-teal-400 font-bold" : "text-neutral-400 hover:text-neutral-200"
             }`}
@@ -274,6 +280,7 @@ export function PartnerLayout({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/partner/profile"
+            prefetch={true}
             className={`flex flex-col items-center justify-center min-h-[48px] min-w-[48px] px-3 py-1 text-3xs font-semibold ${
               pathname === "/partner/profile" ? "text-teal-400 font-bold" : "text-neutral-400 hover:text-neutral-200"
             }`}

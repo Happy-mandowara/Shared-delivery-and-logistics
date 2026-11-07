@@ -7,7 +7,7 @@ import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: "NationX Shared Delivery & Logistics",
-  description: "Intelligent Shared Delivery Fulfilment Engine — Khammam Pilot",
+  description: "Intelligent Shared Delivery Fulfilment Engine — Khammam, Telangana",
 };
 
 export default function RootLayout({

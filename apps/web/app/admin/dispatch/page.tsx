@@ -62,6 +62,31 @@ export default function AdminBatchFormationEnginePage() {
   const candidates = candidatesData || [];
   const partners = partnersData || [];
 
+  // Auto-Optimize Mutation
+  const autoOptimizeMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.post<any>("/batches/optimize", {
+        locality: selectedLocality,
+        maxOrders,
+        capacityUnits,
+        autoCreate: true,
+      });
+      return res.data;
+    },
+    onSuccess: (data: any) => {
+      if (data?.totalCreated > 0) {
+        setActionSuccess(`Batch Optimization Engine successfully created ${data.totalCreated} optimal batch runs!`);
+        queryClient.invalidateQueries({ queryKey: ["admin-batch-candidates"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-batches-list"] });
+      } else {
+        setActionError(data?.message || "No multi-stop candidates available to cluster.");
+      }
+    },
+    onError: (err: any) => {
+      setActionError(err.message || "Optimization engine failed.");
+    },
+  });
+
   // Toggle selection
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
@@ -172,7 +197,7 @@ export default function AdminBatchFormationEnginePage() {
               <option value="Mamata Hospital Road">Mamata Hospital Road</option>
               <option value="Gandhi Chowk">Gandhi Chowk</option>
               <option value="Bypass Road">Bypass Road</option>
-              <option value="ALL">All Khammam Pilot Zones</option>
+              <option value="ALL">All Khammam Delivery Sectors</option>
             </select>
           </div>
 
@@ -220,18 +245,31 @@ export default function AdminBatchFormationEnginePage() {
             </span>
           </div>
 
-          <button
-            onClick={() => formBatchMutation.mutate()}
-            disabled={selectedIds.length < 2 || formBatchMutation.isPending}
-            className="px-6 py-2.5 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] disabled:bg-neutral-300 text-white text-xs font-bold transition-colors min-h-[44px] flex items-center justify-center gap-2 shadow-xs"
-          >
-            <Compass className="w-4 h-4" />
-            <span>
-              {formBatchMutation.isPending
-                ? "Forming Batch..."
-                : `Form Shared Batch (${selectedIds.length})`}
-            </span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => autoOptimizeMutation.mutate()}
+              disabled={candidates.length < 2 || autoOptimizeMutation.isPending}
+              className="px-4 py-2.5 rounded-xl bg-teal-50 hover:bg-teal-100 disabled:bg-neutral-100 text-[#0F766E] disabled:text-neutral-400 border border-teal-200 text-xs font-bold transition-colors min-h-[44px] flex items-center justify-center gap-1.5"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>
+                {autoOptimizeMutation.isPending ? "Optimizing..." : "Auto-Optimize Batches (Smart Engine)"}
+              </span>
+            </button>
+
+            <button
+              onClick={() => formBatchMutation.mutate()}
+              disabled={selectedIds.length < 2 || formBatchMutation.isPending}
+              className="px-5 py-2.5 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] disabled:bg-neutral-300 text-white text-xs font-bold transition-colors min-h-[44px] flex items-center justify-center gap-2 shadow-xs"
+            >
+              <Compass className="w-4 h-4" />
+              <span>
+                {formBatchMutation.isPending
+                  ? "Forming Batch..."
+                  : `Form Shared Batch (${selectedIds.length})`}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 

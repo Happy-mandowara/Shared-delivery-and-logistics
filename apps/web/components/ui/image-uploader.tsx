@@ -11,6 +11,7 @@ interface ImageUploaderProps {
   label?: string;
   maxFiles?: number;
   maxImages?: number;
+  onboarding?: boolean;
 }
 
 export function ImageUploader({
@@ -20,6 +21,7 @@ export function ImageUploader({
   label = "Upload Image",
   maxFiles = 5,
   maxImages,
+  onboarding = false,
 }: ImageUploaderProps) {
   const effectiveMax = maxImages || maxFiles;
   const [isUploading, setIsUploading] = useState(false);
@@ -59,9 +61,13 @@ export function ImageUploader({
           const compressedBase64 = canvas.toDataURL("image/webp", 0.82);
 
           try {
-            const res = await api.post<any>("/upload", {
+            const isOnboardingContext = onboarding || (typeof window !== "undefined" && window.location.pathname.includes("/register"));
+            const uploadUrl = isOnboardingContext ? "/upload?purpose=onboarding" : "/upload";
+            const res = await api.post<any>(uploadUrl, {
               data: compressedBase64,
               fileName: file.name.replace(/\.[^/.]+$/, ".webp"),
+            }, {
+              headers: isOnboardingContext ? { "x-onboarding": "true" } : undefined
             });
             if (res.success && res.data?.url) {
               resolve(res.data.url);

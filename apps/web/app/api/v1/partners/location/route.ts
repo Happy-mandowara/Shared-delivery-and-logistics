@@ -31,8 +31,8 @@ export async function GET(req: NextRequest) {
       params.push(partnerId);
     } else if (batchId) {
       query += ` 
-        JOIN public.delivery_batches b ON b.assigned_partner_id = dp.id
-        WHERE b.id = $1
+        JOIN public.delivery_assignments da ON da.partner_id = dp.id
+        WHERE da.batch_id = $1
       `;
       params.push(batchId);
     } else {

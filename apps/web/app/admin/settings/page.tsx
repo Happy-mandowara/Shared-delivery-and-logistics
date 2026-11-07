@@ -208,7 +208,7 @@ export default function AdminSettingsPage() {
 
           <div className="pt-4 border-t border-neutral-100 flex items-center justify-between">
             <div>
-              <span className="text-xs font-bold text-neutral-900 block">Khammam Sector 01 Pilot Mode</span>
+              <span className="text-xs font-bold text-neutral-900 block">Khammam Sector 01 Special Rate Mode</span>
               <span className="text-3xs text-neutral-400">Shows DEMO badges and maintains zero merchant fees.</span>
             </div>
 

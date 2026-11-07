@@ -46,7 +46,9 @@ export async function GET(
       // 2. Fetch suborders (RLS filtered)
       const subordersRes = await client.query(
         `SELECT ms.id, ms.suborder_number AS "suborderNumber", ms.order_id AS "orderId",
-                ms.merchant_id AS "merchantId", m.name AS "merchantName", ms.status,
+                ms.merchant_id AS "merchantId", m.name AS "merchantName", m.address AS "merchantAddress",
+                m.locality AS "merchantLocality", m.latitude AS "merchantLatitude", m.longitude AS "merchantLongitude",
+                ms.status,
                 ms.preparation_deadline AS "preparationDeadline", ms.ready_at AS "readyAt",
                 ms.handed_over_at AS "handedOverAt", ms.subtotal, ms.merchant_notes AS "merchantNotes"
          FROM public.merchant_suborders ms
@@ -81,8 +83,54 @@ export async function GET(
         [id]
       );
 
+      // 5. Fetch associated batch and live partner tracking data
+      const batchRes = await client.query(
+        `SELECT bo.batch_id AS "batchId", b.batch_code AS "batchCode", b.status AS "batchStatus",
+                da.partner_id AS "partnerId",
+                dp.latitude AS "partnerLatitude", dp.longitude AS "partnerLongitude",
+                dp.vehicle_type AS "vehicleType", dp.current_locality AS "partnerLocality",
+                dp.updated_at AS "partnerLocationUpdatedAt",
+                u.name AS "partnerName", u.phone AS "partnerPhone"
+         FROM public.batch_orders bo
+         JOIN public.delivery_batches b ON bo.batch_id = b.id
+         LEFT JOIN public.delivery_assignments da ON da.batch_id = b.id AND da.status IN ('ACCEPTED', 'OFFERED')
+         LEFT JOIN public.delivery_partners dp ON da.partner_id = dp.id
+         LEFT JOIN public.users u ON dp.user_id = u.id
+         WHERE bo.order_id = $1
+         LIMIT 1`,
+        [id]
+      );
+
+      let batchInfo = null;
+      let rider = null;
+
+      if (batchRes.rows.length > 0) {
+        const b = batchRes.rows[0];
+        batchInfo = {
+          id: b.batchId,
+          code: b.batchCode,
+          status: b.batchStatus,
+        };
+
+        if (b.partnerId) {
+          rider = {
+            id: b.partnerId,
+            name: b.partnerName || "Delivery Partner",
+            phone: b.partnerPhone || null,
+            vehicleType: b.vehicleType || "TWO_WHEELER",
+            latitude: b.partnerLatitude || null,
+            longitude: b.partnerLongitude || null,
+            locality: b.partnerLocality || null,
+            updatedAt: b.partnerLocationUpdatedAt || null,
+          };
+        }
+      }
+
       return {
         ...order,
+        batchId: batchInfo?.id || null,
+        batch: batchInfo,
+        rider,
         suborders,
         events: eventsRes.rows,
       };

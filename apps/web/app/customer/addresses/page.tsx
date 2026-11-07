@@ -71,7 +71,7 @@ export default function CustomerAddressesPage() {
             Saved Addresses
           </h1>
           <p className="text-xs sm:text-sm text-neutral-600">
-            Delivery destinations for fast checkout within the Khammam pilot zone.
+            Delivery destinations for fast checkout within the Khammam delivery zone.
           </p>
         </div>
 

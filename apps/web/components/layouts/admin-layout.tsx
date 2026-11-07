@@ -103,13 +103,13 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </div>
           </Link>
 
-          {/* Pilot Badge */}
+          {/* Network Badge */}
           <div className="mt-4 px-3 py-2 rounded-xl bg-teal-950/40 border border-teal-800/50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
               <span className="text-xs font-bold text-teal-200">Khammam Sector 01</span>
             </div>
-            <span className="text-3xs font-extrabold px-1.5 py-0.5 rounded bg-teal-900 text-teal-300">DEMO</span>
+            <span className="text-3xs font-extrabold px-1.5 py-0.5 rounded bg-teal-900 text-teal-300">ACTIVE</span>
           </div>
         </div>
 
@@ -126,6 +126,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={true}
                     className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
                       active
                         ? "bg-[#0F766E] text-white shadow-xs"
@@ -215,6 +216,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                       <Link
                         key={item.href}
                         href={item.href}
+                        prefetch={true}
                         onClick={() => setMobileMenuOpen(false)}
                         className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold hover:bg-neutral-800 min-h-[48px]"
                       >

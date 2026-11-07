@@ -35,7 +35,7 @@ export default function AdminPartnersDirectoryPage() {
             Delivery Fleet Directory
           </h1>
           <p className="text-xs sm:text-sm text-neutral-600">
-            Registered two-wheeler delivery riders assigned to the Khammam pilot hub.
+            Registered two-wheeler delivery riders assigned to the Khammam fleet hub.
           </p>
         </div>
 

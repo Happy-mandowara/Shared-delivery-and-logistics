@@ -37,7 +37,7 @@ export default function ContactPage() {
             Field Operations Hub
           </span>
           <h1 className="text-3xl sm:text-4xl font-black text-neutral-950 tracking-tight">
-            Contact the Khammam Pilot Team
+            Contact the Khammam Operations Team
           </h1>
           <p className="text-neutral-600 text-sm max-w-2xl leading-relaxed">
             Need operational assistance, merchant onboarding support, or order resolution? Our physical hub team is stationed on Wyra Road.
@@ -56,7 +56,7 @@ export default function ContactPage() {
                 <div className="flex items-start gap-3">
                   <MapPin className="w-4 h-4 text-[#0F766E] shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold text-neutral-900 block">Pilot Hub Address</span>
+                    <span className="font-bold text-neutral-900 block">Central Hub Address</span>
                     <span>Door No. 4-2-89/1, 1st Floor, Near Clock Tower, Wyra Road, Khammam, Telangana 507001</span>
                   </div>
                 </div>
@@ -87,7 +87,7 @@ export default function ContactPage() {
               </div>
             </div>
 
-            {/* Emergency Pilot Notice */}
+            {/* Emergency Support Notice */}
             <div className="p-5 rounded-2xl bg-[#0B1514] text-white space-y-2">
               <span className="text-3xs uppercase font-extrabold tracking-wider text-teal-400 block">
                 Active Order Escalations
@@ -167,7 +167,7 @@ export default function ContactPage() {
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#0F766E] bg-white min-h-[44px]"
                   >
-                    <option value="General Inquiry">General Pilot Inquiry</option>
+                    <option value="General Inquiry">General Inquiry</option>
                     <option value="Shop Partnership">Merchant Partnership Question</option>
                     <option value="Rider Opportunities">Delivery Partner Recruitment</option>
                     <option value="Order Exception">Feedback or Operational Issue</option>

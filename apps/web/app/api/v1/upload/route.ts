@@ -24,13 +24,20 @@ function getUploadsDir(): string {
  * Uploads to Supabase Storage bucket 'product-images' and mirrors to local disk.
  */
 export async function POST(req: NextRequest) {
-  const auth = await requireAuth(req, [
-    UserRole.CUSTOMER,
-    UserRole.MERCHANT,
-    UserRole.PARTNER,
-    UserRole.ADMIN,
-  ]);
-  if (auth.errorResponse) return auth.errorResponse;
+  const isOnboarding = 
+    req.nextUrl.searchParams.get("purpose") === "onboarding" ||
+    req.nextUrl.searchParams.get("context") === "onboarding" ||
+    req.headers.get("x-onboarding") === "true";
+
+  if (!isOnboarding) {
+    const auth = await requireAuth(req, [
+      UserRole.CUSTOMER,
+      UserRole.MERCHANT,
+      UserRole.PARTNER,
+      UserRole.ADMIN,
+    ]);
+    if (auth.errorResponse) return auth.errorResponse;
+  }
 
   try {
     const contentType = req.headers.get("content-type") || "";

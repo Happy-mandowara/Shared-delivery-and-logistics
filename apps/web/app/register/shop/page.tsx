@@ -46,6 +46,7 @@ const ONBOARDING_STEPS = [
 export default function RegisterShopPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
+  const [maxStepReached, setMaxStepReached] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -142,7 +143,8 @@ export default function RegisterShopPage() {
       panNumber: "AABCK1234F",
       agreeToTerms: true,
     });
-    setSaveMessage("Demo information for Khammam partner loaded!");
+    setMaxStepReached(10);
+    setSaveMessage("Sample merchant details loaded!");
     setTimeout(() => setSaveMessage(null), 3000);
   };
 
@@ -155,6 +157,7 @@ export default function RegisterShopPage() {
           setFormData((prev) => ({ ...prev, ...res.data.draft.draftData }));
           if (res.data.draft.currentStep) {
             setCurrentStep(res.data.draft.currentStep);
+            setMaxStepReached((prev) => Math.max(prev, res.data.draft.currentStep));
           }
         }
       } catch (err) {
@@ -163,6 +166,38 @@ export default function RegisterShopPage() {
     };
     fetchDraft();
   }, []);
+
+  // Step Validation for strictly unidirectional progression
+  const validateCurrentStep = (step: number): { valid: boolean; error?: string } => {
+    switch (step) {
+      case 1:
+        if (!formData.shopName || formData.shopName.trim().length < 2) {
+          return { valid: false, error: "Please enter your Shop / Trade Name (minimum 2 characters)." };
+        }
+        if (!formData.ownerName || formData.ownerName.trim().length < 2) {
+          return { valid: false, error: "Please enter the Proprietor / Contact Person name." };
+        }
+        if (!formData.phone || formData.phone.replace(/[\s\-\+]/g, "").length < 10) {
+          return { valid: false, error: "Please provide a valid 10-digit mobile phone number." };
+        }
+        return { valid: true };
+      case 2:
+        if (!formData.category) {
+          return { valid: false, error: "Please select your primary commerce category." };
+        }
+        return { valid: true };
+      case 3:
+        if (!formData.address || formData.address.trim().length < 3) {
+          return { valid: false, error: "Please enter your shop's physical street address." };
+        }
+        if (!formData.locality) {
+          return { valid: false, error: "Please select your corridor locality in Khammam." };
+        }
+        return { valid: true };
+      default:
+        return { valid: true };
+    }
+  };
 
   // Save draft helper
   const handleSaveDraft = async () => {
@@ -194,7 +229,11 @@ export default function RegisterShopPage() {
         submitApplication: true
       });
 
-      if (res.success) {
+      if (res.success || res.data?.success) {
+        const token = res.data?.token || res.data?.data?.token;
+        if (token) {
+          api.setToken(token);
+        }
         setIsSubmittedSuccess(true);
       } else {
         setErrorMessage(res.error?.message || "Submission failed. Please verify required fields.");
@@ -207,12 +246,23 @@ export default function RegisterShopPage() {
   };
 
   const nextStep = () => {
+    const val = validateCurrentStep(currentStep);
+    if (!val.valid) {
+      setErrorMessage(val.error || "Please complete the required fields before continuing.");
+      window.scrollTo({ top: 120, behavior: "smooth" });
+      return;
+    }
+
+    setErrorMessage(null);
     handleSaveDraft();
-    setCurrentStep((prev) => Math.min(prev + 1, 10));
+    const next = Math.min(currentStep + 1, 10);
+    setMaxStepReached((prev) => Math.max(prev, next));
+    setCurrentStep(next);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const prevStep = () => {
+    setErrorMessage(null);
     setCurrentStep((prev) => Math.max(prev - 1, 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -242,7 +292,7 @@ export default function RegisterShopPage() {
               className="px-3.5 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#0F766E] text-xs font-bold transition-colors border border-teal-200 flex items-center gap-1.5 min-h-[40px]"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Fill Demo Data</span>
+              <span>Auto-Fill Sample Data</span>
             </button>
 
             <button
@@ -301,55 +351,102 @@ export default function RegisterShopPage() {
               </div>
             </div>
 
-            <div className="pt-4 flex items-center justify-center gap-3">
+            <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
               <Link
-                href="/login"
-                className="px-6 py-3 rounded-xl bg-[#0F766E] text-white text-xs font-bold min-h-[48px] inline-flex items-center gap-2"
+                href="/merchant"
+                className="px-6 py-3 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] text-white text-xs font-bold min-h-[48px] inline-flex items-center gap-2 shadow-xs"
               >
-                <span>Go to Merchant Sign In</span>
+                <span>Enter Merchant Operations Portal</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
+                href="/login"
+                className="px-6 py-3 rounded-xl border border-neutral-300 hover:bg-neutral-50 text-neutral-700 text-xs font-bold min-h-[48px] inline-flex items-center"
+              >
+                Sign In Screen
+              </Link>
+              <Link
                 href="/explore"
-                className="px-6 py-3 rounded-xl border border-neutral-300 text-neutral-700 text-xs font-bold min-h-[48px] inline-flex items-center"
+                className="px-6 py-3 rounded-xl border border-neutral-300 hover:bg-neutral-50 text-neutral-700 text-xs font-bold min-h-[48px] inline-flex items-center"
               >
                 Explore Active Shops
               </Link>
             </div>
           </div>
         ) : (
-          <div className="space-y-8">
-            {/* 10-Step Progress Strip */}
-            <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-2xs overflow-x-auto">
-              <div className="flex items-center justify-between min-w-[700px] gap-2">
+          <div className="space-y-6">
+            {/* Sleek, Compact 10-Step Progress Strip */}
+            <div className="bg-white p-4 rounded-2xl border border-neutral-200/90 shadow-2xs space-y-3">
+              {/* Stepper Status Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-[#0F766E] text-3xs font-extrabold uppercase tracking-wider">
+                    Step {currentStep} of 10
+                  </span>
+                  <span className="font-extrabold text-neutral-900">
+                    {ONBOARDING_STEPS[currentStep - 1].title}
+                  </span>
+                  <span className="text-neutral-400 hidden md:inline">·</span>
+                  <span className="text-neutral-500 text-3xs hidden md:inline">
+                    {ONBOARDING_STEPS[currentStep - 1].desc}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-3xs font-semibold text-neutral-500">
+                  <span>{Math.round((currentStep / 10) * 100)}% Completed</span>
+                  <span className="text-neutral-300">|</span>
+                  <span className="text-teal-700">Sequential verification</span>
+                </div>
+              </div>
+
+              {/* Slim Progress Bar */}
+              <div className="w-full h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-[#0F766E] rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${(currentStep / 10) * 100}%` }}
+                />
+              </div>
+
+              {/* Compact Step Icons & Labels */}
+              <div className="flex items-center justify-between gap-1 sm:gap-2 overflow-x-auto pb-1 scrollbar-thin">
                 {ONBOARDING_STEPS.map((s) => {
-                  const Icon = s.icon;
                   const isCurrent = currentStep === s.step;
                   const isCompleted = currentStep > s.step;
+                  const isAccessible = s.step <= maxStepReached;
 
                   return (
                     <button
                       key={s.step}
                       type="button"
-                      onClick={() => setCurrentStep(s.step)}
-                      className={`flex-1 flex flex-col items-center text-center p-2 rounded-xl transition-all ${
+                      disabled={!isAccessible}
+                      onClick={() => {
+                        if (isAccessible) {
+                          setErrorMessage(null);
+                          setCurrentStep(s.step);
+                        }
+                      }}
+                      className={`flex-1 min-w-[58px] sm:min-w-[70px] flex flex-col items-center text-center p-1.5 rounded-xl transition-all ${
                         isCurrent
-                          ? "bg-teal-50 border border-teal-300 text-[#0F766E]"
+                          ? "bg-teal-50/80 border border-teal-300 text-[#0F766E] font-bold"
                           : isCompleted
-                          ? "text-emerald-700 hover:bg-neutral-50"
-                          : "text-neutral-400 hover:bg-neutral-50"
+                          ? "text-emerald-700 hover:bg-neutral-50 cursor-pointer"
+                          : isAccessible
+                          ? "text-neutral-700 hover:bg-neutral-50 cursor-pointer"
+                          : "text-neutral-300 opacity-40 cursor-not-allowed"
                       }`}
+                      title={!isAccessible ? "Step locked: Complete previous stages sequentially" : s.title}
                     >
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-1.5 ${
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-3xs font-black mb-1 transition-transform ${
                         isCurrent
-                          ? "bg-[#0F766E] text-white shadow-xs"
+                          ? "bg-[#0F766E] text-white shadow-xs scale-105"
                           : isCompleted
                           ? "bg-emerald-600 text-white"
-                          : "bg-neutral-100 text-neutral-500"
+                          : isAccessible
+                          ? "bg-neutral-200 text-neutral-700"
+                          : "bg-neutral-100 text-neutral-400"
                       }`}>
-                        {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : s.step}
+                        {isCompleted ? <CheckCircle2 className="w-3.5 h-3.5" /> : s.step}
                       </div>
-                      <span className="text-3xs font-extrabold uppercase tracking-wider block truncate w-full">
+                      <span className="text-3xs font-extrabold uppercase tracking-tight block truncate w-full text-[10px] leading-tight">
                         {s.title}
                       </span>
                     </button>
@@ -596,7 +693,7 @@ export default function RegisterShopPage() {
                       Pinpoint Exact Storefront Location on Map
                     </label>
                     <p className="text-3xs text-neutral-500">
-                      Drag the marker to your store entrance or click anywhere within the Khammam pilot zone. Riders navigate directly to this coordinate for order pickups.
+                      Drag the marker to your store entrance or click anywhere within the Khammam delivery zone. Riders navigate directly to this coordinate for order pickups.
                     </p>
                     <LocationPickerMap
                       initialLat={formData.latitude}
@@ -625,6 +722,7 @@ export default function RegisterShopPage() {
                       Upload actual pictures of your shop exterior, counter, and kitchen. Customers prefer genuine storefront photos. Compressed to WebP automatically.
                     </p>
                     <ImageUploader
+                      onboarding={true}
                       value={formData.galleryUrls}
                       onChange={(urls) => {
                         const urlList = Array.isArray(urls) ? urls : [urls];

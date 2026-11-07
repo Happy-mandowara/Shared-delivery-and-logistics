@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { pool } from "@/lib/db";
 import { apiSuccess, apiError } from "@/lib/api-response";
+import { signAuthToken } from "@/lib/auth";
+import { UserRole } from "@nationx/shared";
 import crypto from "crypto";
 
 const PartnerRegisterSchema = z.object({
@@ -99,12 +101,37 @@ export async function POST(req: NextRequest) {
       ]
     );
 
-    return apiSuccess({
+    const token = signAuthToken({
+      userId,
+      email: userEmail,
+      role: UserRole.PARTNER,
+    });
+
+    const response = apiSuccess({
       partnerId,
+      userId,
+      token,
       status: "UNDER_REVIEW",
       verified: false,
       message: "Delivery partner application submitted successfully. Awaiting administrator verification.",
     }, 201);
+
+    response.cookies.set("sb-access-token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60,
+      path: "/",
+    });
+    response.cookies.set("session", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60,
+      path: "/",
+    });
+
+    return response;
   } catch (err: any) {
     console.error("[Partner Register Error]:", err);
     return apiError("INTERNAL_ERROR", err.message || "Failed to submit partner application", 500);

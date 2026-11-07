@@ -35,7 +35,7 @@ export default function RebuiltHomePage() {
   const [selectedLocality, setSelectedLocality] = useState<string>("ALL");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
 
-  // 1. Fetch Verified Pilot Merchants
+  // 1. Fetch Verified Merchants
   const { data: merchantsData, isLoading: isLoadingMerchants } = useQuery({
     queryKey: ["merchants", searchQuery, selectedLocality, selectedCategory],
     queryFn: async () => {
@@ -122,7 +122,7 @@ export default function RebuiltHomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Content Column */}
             <div className="lg:col-span-7 space-y-6">
-              {/* Pilot Chip */}
+              {/* Hub Chip */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-100/80 border border-teal-300 text-teal-900 text-xs font-bold tracking-wide">
                 <span className="w-2 h-2 rounded-full bg-[#0F766E] animate-pulse" />
                 <span>Sector 01 Live · Khammam Municipal Corporation</span>
@@ -237,7 +237,7 @@ export default function RebuiltHomePage() {
                 </div>
 
                 <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center justify-between">
-                  <span className="text-xs text-neutral-500">Pilot efficiency score:</span>
+                  <span className="text-xs text-neutral-500">Batch efficiency score:</span>
                   <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
                     1 Rider · 2 Shops · 2 Customers
                   </span>
@@ -452,13 +452,13 @@ export default function RebuiltHomePage() {
         </div>
       </section>
 
-      {/* SECTION 5: LIVE PILOT COVERAGE IN KHAMMAM */}
+      {/* SECTION 5: LIVE COVERAGE IN KHAMMAM */}
       <section className="py-20 bg-[#F8FAFA] border-b border-neutral-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-6 space-y-6">
               <span className="text-xs uppercase font-extrabold tracking-widest text-[#0F766E] block">
-                Pilot Service Area
+                Delivery Service Area
               </span>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight">
                 Covering Khammam&apos;s Core High-Density Corridors
@@ -616,7 +616,7 @@ export default function RebuiltHomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
           <div className="max-w-3xl mx-auto space-y-4">
             <span className="px-3.5 py-1.5 rounded-full bg-teal-800/80 border border-teal-600 text-teal-200 text-xs font-bold uppercase tracking-wider inline-block">
-              Telangana Pilot Demonstration
+              Telangana Logistics Network
             </span>
             <h2 className="text-3xl sm:text-5xl font-black tracking-tight">
               Experience the Future of Local Shared Logistics

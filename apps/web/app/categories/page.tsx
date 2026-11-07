@@ -1,147 +1,254 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { 
-  ShoppingBag, 
+  Store, 
+  MapPin, 
   ArrowRight, 
   Sparkles, 
-  Store, 
-  ChevronRight,
-  ShieldCheck,
-  CheckCircle2
+  Star, 
+  Layers, 
+  ShoppingBag, 
+  CheckCircle2, 
+  Search,
+  ChevronRight
 } from "lucide-react";
 import { PublicLayout } from "@/components/layouts/public-layout";
+import { api } from "@/lib/api-client";
+
+const CATEGORY_ICONS: Record<string, string> = {
+  "Restaurants": "🍛",
+  "Groceries & Staples": "🌾",
+  "Groceries & Daily Essentials": "🛒",
+  "Groceries": "🌾",
+  "Sweets & Bakery": "🍬",
+  "Sweets": "🍬",
+  "Dairy & Eggs": "🥛",
+  "Dairy": "🥛",
+  "Produce": "🥬",
+  "Pharmacy": "💊",
+};
 
 export default function CategoriesPage() {
-  const categoryGroups = [
-    {
-      id: "restaurants",
-      title: "Hot Kitchens & Regional Biryani",
-      icon: "🍛",
-      description: "Authentic Hyderabadi & Telangana dum biryani, curries, and tiffin from trusted local restaurants.",
-      popularItems: ["Chicken Dum Biryani", "Mutton Biryani", "Paneer Butter Masala", "Ghee Karam Dosa"],
-      merchantsCount: "4 Verified Outlets",
-      accent: "from-amber-500/10 to-transparent",
-      categoryParam: "Restaurants"
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["catalog-categories-with-stores"],
+    queryFn: async () => {
+      const res = await api.get<any>("/categories");
+      return res.data || { categoriesWithStores: [], localities: [] };
     },
-    {
-      id: "groceries",
-      title: "Kirana, Grains & Daily Staples",
-      icon: "🌾",
-      description: "Sona Masoori rice, pulses, cold-pressed oils, spices, and packaged food essentials.",
-      popularItems: ["Sona Masoori Rice (25kg)", "Toor Dal Premium", "Freedom Sunflower Oil", "Aashirvaad Atta"],
-      merchantsCount: "6 Verified Stores",
-      accent: "from-emerald-500/10 to-transparent",
-      categoryParam: "Groceries"
-    },
-    {
-      id: "dairy",
-      title: "Daily Dairy, Milk & Bakery",
-      icon: "🥛",
-      description: "Fresh Vijaya/Heritage milk, curd, paneer, and freshly baked bread and rusks.",
-      popularItems: ["Fresh Full Cream Milk (500ml)", "Curd Pouch", "Fresh Malai Paneer", "Brown Bread"],
-      merchantsCount: "3 Verified Hubs",
-      accent: "from-blue-500/10 to-transparent",
-      categoryParam: "Dairy"
-    },
-    {
-      id: "produce",
-      title: "Fresh Farm Fruits & Vegetables",
-      icon: "🥬",
-      description: "Locally harvested vegetables, seasonal fruits, and greens sourced daily from Khammam rythu bazars.",
-      popularItems: ["Country Tomatoes (1kg)", "Desi Potatoes (1kg)", "Fresh Palak Bunch", "Robusta Bananas"],
-      merchantsCount: "5 Verified Stalls",
-      accent: "from-green-500/10 to-transparent",
-      categoryParam: "Produce"
-    },
-    {
-      id: "pharmacy",
-      title: "Pharmacy, Wellness & First Aid",
-      icon: "💊",
-      description: "Over-the-counter medicines, baby care products, health supplements, and first-aid kits.",
-      popularItems: ["Paracetamol 650mg", "ORS Electrolyte Drink", "Dettol Antiseptic", "Digital Thermometer"],
-      merchantsCount: "2 Licensed Chemists",
-      accent: "from-rose-500/10 to-transparent",
-      categoryParam: "Pharmacy"
-    },
-    {
-      id: "sweets",
-      title: "Traditional Sweets & Snacks",
-      icon: "🍬",
-      description: "Famous Telangana sweets, hot mixtures, bellam gavvalu, and festive gift boxes.",
-      popularItems: ["Kaju Katli (250g)", "Bellam Sunnundalu", "Khammam Mixture (500g)", "Gulab Jamun"],
-      merchantsCount: "3 Specialty Sweet Houses",
-      accent: "from-purple-500/10 to-transparent",
-      categoryParam: "Sweets"
-    }
-  ];
+  });
+
+  const categoriesWithStores: Array<{
+    category: string;
+    merchantCount: number;
+    merchants: Array<{
+      id: string;
+      name: string;
+      code: string;
+      locality: string;
+      address: string;
+      logoUrl: string | null;
+      coverUrl: string | null;
+      rating: number;
+      ratingCount: number;
+      productCount: number;
+    }>;
+  }> = data?.categoriesWithStores || [];
+
+  const filteredCategories = categoriesWithStores
+    .filter((cat) => selectedCategory === "ALL" || cat.category === selectedCategory)
+    .map((cat) => {
+      if (!searchQuery.trim()) return cat;
+      const lower = searchQuery.toLowerCase();
+      return {
+        ...cat,
+        merchants: cat.merchants.filter(
+          (m) =>
+            m.name.toLowerCase().includes(lower) ||
+            m.locality.toLowerCase().includes(lower) ||
+            cat.category.toLowerCase().includes(lower)
+        ),
+      };
+    })
+    .filter((cat) => cat.merchants.length > 0);
 
   return (
     <PublicLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
-        {/* Title Header */}
+        {/* Header */}
         <div className="space-y-3">
-          <span className="text-xs font-bold uppercase tracking-widest text-[#0F766E] block">
-            Khammam Retail Catalog
-          </span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-[#0F766E] text-3xs font-extrabold uppercase tracking-wider">
+            <Layers className="w-3.5 h-3.5" />
+            <span>Khammam Retail Catalog</span>
+          </div>
           <h1 className="text-3xl sm:text-4xl font-black text-neutral-950 tracking-tight">
-            Browse by Local Category
+            Browse Stores by Local Category
           </h1>
           <p className="text-neutral-600 text-sm max-w-2xl leading-relaxed">
-            Everything you need from your neighbourhood, organized into verified categories. Remember: you can combine items across categories into a single delivery batch.
+            Every category has verified local outlets. Choose a category to browse its dedicated stores, view product availability, and build your shared delivery basket.
           </p>
         </div>
 
-        {/* Categories Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {categoryGroups.map((group) => (
-            <div
-              key={group.id}
-              className={`p-6 rounded-3xl bg-white border border-neutral-200/90 shadow-2xs hover:shadow-md hover:border-teal-300 transition-all flex flex-col justify-between bg-gradient-to-br ${group.accent}`}
-            >
-              <div>
-                <div className="flex items-start justify-between mb-4">
-                  <span className="text-4xl p-2 rounded-2xl bg-white shadow-2xs border border-neutral-100">
-                    {group.icon}
+        {/* Toolbar: Category Filters & Search */}
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+            {/* Category Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-none">
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("ALL")}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap min-h-[44px] ${
+                  selectedCategory === "ALL"
+                    ? "bg-[#0F766E] text-white shadow-xs"
+                    : "bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                }`}
+              >
+                All Categories ({categoriesWithStores.length})
+              </button>
+              {categoriesWithStores.map((cat) => (
+                <button
+                  key={cat.category}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat.category)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 min-h-[44px] ${
+                    selectedCategory === cat.category
+                      ? "bg-[#0F766E] text-white shadow-xs"
+                      : "bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                  }`}
+                >
+                  <span>{CATEGORY_ICONS[cat.category] || "🏪"}</span>
+                  <span>{cat.category}</span>
+                  <span className={`px-1.5 py-0.5 rounded-full text-3xs font-black ${
+                    selectedCategory === cat.category
+                      ? "bg-teal-800 text-white"
+                      : "bg-neutral-100 text-neutral-600"
+                  }`}>
+                    {cat.merchantCount}
                   </span>
-                  <span className="text-3xs font-extrabold uppercase px-2.5 py-1 rounded-full bg-teal-50 border border-teal-200 text-[#0F766E]">
-                    {group.merchantsCount}
-                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Quick Search */}
+            <div className="relative min-w-[240px]">
+              <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search stores or items..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-[#0F766E] bg-white min-h-[44px]"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Loading Skeleton */}
+        {isLoading ? (
+          <div className="space-y-8 animate-pulse">
+            <div className="h-40 bg-white rounded-3xl border border-neutral-200" />
+            <div className="h-40 bg-white rounded-3xl border border-neutral-200" />
+          </div>
+        ) : filteredCategories.length === 0 ? (
+          <div className="p-12 text-center bg-white rounded-3xl border border-neutral-200 space-y-3">
+            <Store className="w-12 h-12 text-neutral-300 mx-auto" />
+            <h3 className="text-base font-bold text-neutral-900">No stores found</h3>
+            <p className="text-xs text-neutral-500">
+              Try adjusting your category selection or search keywords.
+            </p>
+          </div>
+        ) : (
+          /* Categories & Dedicated Store Sections */
+          <div className="space-y-12">
+            {filteredCategories.map((catGroup) => (
+              <section key={catGroup.category} className="space-y-5">
+                {/* Section Header */}
+                <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl p-2 rounded-2xl bg-teal-50 border border-teal-200 shadow-2xs">
+                      {CATEGORY_ICONS[catGroup.category] || "🏪"}
+                    </span>
+                    <div>
+                      <h2 className="text-xl font-black text-neutral-950">
+                        {catGroup.category}
+                      </h2>
+                      <span className="text-3xs text-neutral-500">
+                        {catGroup.merchants.length} verified {catGroup.merchants.length === 1 ? "store" : "stores"} in Khammam
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <h2 className="text-xl font-bold text-neutral-900 mb-2">
-                  {group.title}
-                </h2>
-                <p className="text-xs text-neutral-600 leading-relaxed mb-4">
-                  {group.description}
-                </p>
+                {/* Stores Grid for this Category */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {catGroup.merchants.map((shop) => (
+                    <div
+                      key={shop.id}
+                      className="bg-white rounded-3xl border border-neutral-200/90 shadow-2xs hover:shadow-md hover:border-teal-300 transition-all flex flex-col justify-between overflow-hidden"
+                    >
+                      {/* Shop Header & Photo */}
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-start gap-3.5">
+                          <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-200 text-[#0F766E] flex items-center justify-center font-bold text-xl overflow-hidden shrink-0 shadow-xs">
+                            {shop.logoUrl ? (
+                              <img
+                                src={shop.logoUrl}
+                                alt={shop.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <Store className="w-7 h-7" />
+                            )}
+                          </div>
+                          <div className="space-y-0.5 truncate flex-1">
+                            <h3 className="text-base font-black text-neutral-950 truncate">
+                              {shop.name}
+                            </h3>
+                            <p className="text-xs text-neutral-600 flex items-center gap-1 truncate">
+                              <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                              <span className="truncate">{shop.locality || "Khammam Central"}</span>
+                            </p>
+                            <div className="flex items-center gap-2 pt-1 text-3xs font-semibold text-neutral-500">
+                              <span className="inline-flex items-center gap-1 text-amber-700 font-bold">
+                                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                <span>{Number(shop.rating || 4.8).toFixed(1)}</span>
+                              </span>
+                              <span>·</span>
+                              <span className="text-[#0F766E] font-bold">
+                                {shop.productCount || 0} items in stock
+                              </span>
+                            </div>
+                          </div>
+                        </div>
 
-                <div className="space-y-1.5 pt-2 border-t border-neutral-100">
-                  <span className="text-3xs font-bold uppercase tracking-wider text-neutral-400 block mb-1">
-                    Frequent staples:
-                  </span>
-                  {group.popularItems.map((item) => (
-                    <div key={item} className="flex items-center gap-1.5 text-xs text-neutral-700">
-                      <span className="w-1.5 h-1.5 rounded-full bg-teal-600 shrink-0" />
-                      <span>{item}</span>
+                        <p className="text-xs text-neutral-600 line-clamp-2 leading-relaxed">
+                          {shop.address || `Located along ${shop.locality}, Khammam. Verified shared-delivery partner outlet.`}
+                        </p>
+                      </div>
+
+                      {/* Action Button: Direct Storefront Link */}
+                      <div className="p-4 bg-neutral-50/80 border-t border-neutral-100">
+                        <Link
+                          href={`/shops/${shop.id}`}
+                          className="w-full py-2.5 px-4 rounded-xl bg-[#0F766E] hover:bg-[#0D625C] text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[44px] shadow-xs"
+                        >
+                          <ShoppingBag className="w-4 h-4" />
+                          <span>Visit Store & View Menu</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </Link>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-neutral-100">
-                <Link
-                  href={`/explore?category=${encodeURIComponent(group.categoryParam)}`}
-                  className="w-full py-3 px-4 rounded-xl bg-neutral-900 hover:bg-[#0F766E] text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px]"
-                >
-                  <span>Explore {group.categoryParam} Stores</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
+              </section>
+            ))}
+          </div>
+        )}
       </div>
     </PublicLayout>
   );

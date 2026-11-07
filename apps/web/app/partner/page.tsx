@@ -3,17 +3,17 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
-  Bike, 
-  MapPin, 
-  Clock, 
-  IndianRupee, 
-  Navigation, 
-  CheckCircle2, 
-  AlertCircle, 
-  ArrowRight, 
-  Check, 
-  X, 
+import {
+  Bike,
+  MapPin,
+  Clock,
+  IndianRupee,
+  Navigation,
+  CheckCircle2,
+  AlertCircle,
+  ArrowRight,
+  Check,
+  X,
   Store,
   Layers,
   Sparkles
@@ -224,7 +224,7 @@ export default function PartnerDashboardOverviewPage() {
           <span className="text-3xl font-black text-neutral-950 block">
             ₹{completedBatches.length * 120}
           </span>
-          <span className="text-3xs text-emerald-700 font-bold mt-1 block">Demo Compensation</span>
+          <span className="text-3xs text-emerald-700 font-bold mt-1 block">Fleet Settlement Rate</span>
         </div>
       </div>
 

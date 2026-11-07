@@ -72,7 +72,7 @@ export function LocationPickerMap({
 
       // Fetch authoritative service zones from API or use official default
       let activeZone = {
-        name: "Khammam Central Pilot Zone",
+        name: "Khammam Central Delivery Zone",
         code: "ZONE_KHAMMAM_CENTRAL",
         centerLat: 17.2485,
         centerLng: 80.153,
@@ -99,7 +99,7 @@ export function LocationPickerMap({
         // Fall back to default authoritative parameters
       }
 
-      // Add authoritative service zone circle (12 km pilot coverage boundary: 12,000 meters)
+      // Add authoritative service zone circle (12 km delivery coverage boundary: 12,000 meters)
       L.circle([activeZone.centerLat, activeZone.centerLng], {
         color: "#0F766E",
         fillColor: "#0F766E",

@@ -68,7 +68,7 @@ export default function AdminServiceZonesPage() {
                 <span className={`text-3xs font-extrabold uppercase px-2 py-0.5 rounded ${
                   zone.status === "ACTIVE" ? "bg-emerald-100 text-emerald-800" : "bg-neutral-100 text-neutral-600"
                 }`}>
-                  {zone.status === "ACTIVE" ? "Live Pilot Sector" : "Expansion"}
+                  {zone.status === "ACTIVE" ? "Active Delivery Sector" : "Expansion"}
                 </span>
               </div>
 

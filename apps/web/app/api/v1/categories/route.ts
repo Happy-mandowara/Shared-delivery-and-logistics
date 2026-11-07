@@ -4,15 +4,32 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 
 export async function GET(req: NextRequest) {
   try {
-    // 1. Merchant categories with counts
-    const merchantCatsRes = await pool.query(`
+    // 1. Categories with their corresponding stores
+    const categoriesWithStoresRes = await pool.query(`
       SELECT 
-        COALESCE(category, 'General Store') as name,
-        COUNT(*)::int as "merchantCount"
-      FROM public.merchants
-      WHERE is_active = true AND (is_approved IS TRUE OR is_approved IS NULL)
-      GROUP BY category
-      ORDER BY "merchantCount" DESC, name ASC
+        COALESCE(m.category, 'General Store') as category,
+        COUNT(m.id)::int as "merchantCount",
+        json_agg(
+          json_build_object(
+            'id', m.id,
+            'name', m.name,
+            'code', m.code,
+            'locality', m.locality,
+            'address', m.address,
+            'logoUrl', m.logo_url,
+            'coverUrl', m.cover_url,
+            'rating', m.rating,
+            'ratingCount', m.rating_count,
+            'productCount', (
+              SELECT count(*)::int FROM public.products p 
+              WHERE p.merchant_id = m.id AND p.is_active = true AND (p.is_archived IS FALSE OR p.is_archived IS NULL)
+            )
+          ) ORDER BY m.rating DESC NULLS LAST, m.name ASC
+        ) as merchants
+      FROM public.merchants m
+      WHERE m.is_active = true AND (m.is_approved IS TRUE OR m.is_approved IS NULL)
+      GROUP BY m.category
+      ORDER BY "merchantCount" DESC, m.category ASC
     `);
 
     // 2. Product categories with counts
@@ -42,7 +59,11 @@ export async function GET(req: NextRequest) {
     `);
 
     return apiSuccess({
-      merchantCategories: merchantCatsRes.rows,
+      categoriesWithStores: categoriesWithStoresRes.rows,
+      merchantCategories: categoriesWithStoresRes.rows.map(r => ({
+        name: r.category,
+        merchantCount: r.merchantCount
+      })),
       productCategories: productCatsRes.rows,
       localities: localitiesRes.rows,
     });
@@ -50,4 +71,3 @@ export async function GET(req: NextRequest) {
     return apiError("DATABASE_ERROR", err.message || "Failed to fetch categories", 500);
   }
 }
-
